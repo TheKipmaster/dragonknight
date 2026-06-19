@@ -3,3 +3,19 @@ dist/
 *.log
 .DS_Store
 PROMPT.md
+
+# Local Claude config/state
+.claude/
+
+# Sandbox-injected host dotfiles (masked as /dev/null character devices)
+.bash_profile
+.bashrc
+.gitconfig
+.gitmodules
+.idea
+.mcp.json
+.profile
+.ripgreprc
+.vscode
+.zprofile
+.zshrc
