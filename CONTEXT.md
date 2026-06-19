@@ -1,6 +1,6 @@
 # Dragon Knight
 
-A 2D top-down dungeon crawler RPG inspired by the early Zelda games, built in Phaser 3. This document is the shared glossary for the project — it defines domain terms, not implementation details.
+A 2D top-down action dungeon crawler RPG built in Phaser 3. Movement is keyboard-driven (8-way); combat is mouse-aimed melee that strikes in any direction, independent of movement. This document is the shared glossary for the project — it defines domain terms, not implementation details.
 
 ## World
 
@@ -18,8 +18,12 @@ _Avoid_: Exit, Portal, Gate (a Gate may later mean a *locked* Door specifically)
 ## Entities
 
 **Player**:
-The single character controlled by the user — a knight. Has a position, faces a direction, attacks with a sword, and has health measured in Hearts.
+The single character controlled by the user — a knight. Moves with the keyboard and aims a sword toward the mouse cursor (aim is independent of movement direction). Has health measured in Hearts.
 _Avoid_: Hero, Character, Knight (use "Player" in code; "knight" is flavour only).
+
+**Aim**:
+The direction the Player's sword strikes, set continuously by the mouse cursor and independent of movement. Free 360°, not snapped to compass directions.
+_Avoid_: Facing (movement and aim are separate; there is no single "facing").
 
 **Enemy**:
 A hostile entity that damages the Player. Most Enemies deal damage on contact; at least one has a telegraphed attack (a visible wind-up before striking).
