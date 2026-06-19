@@ -1,0 +1,1 @@
+This is a bare repo for a game demo I want to build using Phaser. The Game is a 2d dungeon crawler RPG inspired by the first Zelda games. let's /grill_with_docs to work out all of the architecture decisions that we need to make a working prototype of the first dungeon as an MVP.
