@@ -1,0 +1,20 @@
+{
+  "name": "dragon-knight",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "A 2D top-down dungeon crawler RPG inspired by early Zelda, built with Phaser 3.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "phaser": "^3.80.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vite": "^5.4.0"
+  }
+}
