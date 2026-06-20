@@ -9,6 +9,7 @@ export const VIEW_HEIGHT = 240;
 /** Player movement and damage-response tuning. */
 export const PLAYER = {
   speed: 90, //          movement speed (px/s)
+  attackMoveFactor: 0.5,//movement speed multiplier while mid-swing (0..1)
   iframeMs: 1000, //     invulnerability after taking a hit (ms)
   knockbackMs: 220, //   how long movement is relinquished to knockback (ms)
 } as const;

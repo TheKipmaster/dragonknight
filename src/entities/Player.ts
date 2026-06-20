@@ -56,6 +56,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements Damageable {
   private comboStep = 0;
   private nextSwingAt = 0;
   private comboExpiresAt = 0;
+  /** Movement stays slowed until this time — spans the whole combo, gaps included. */
+  private slowUntil = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, TEX.player);
@@ -108,7 +110,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements Damageable {
 
       const len = Math.hypot(vx, vy);
       if (len > 0) {
-        this.setVelocity((vx / len) * PLAYER.speed, (vy / len) * PLAYER.speed);
+        // Slow to a measured step for the whole combo (gaps included).
+        const speed = now < this.slowUntil ? PLAYER.speed * PLAYER.attackMoveFactor : PLAYER.speed;
+        this.setVelocity((vx / len) * speed, (vy / len) * speed);
       } else {
         this.setVelocity(0, 0);
       }
@@ -141,8 +145,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements Damageable {
     if (this.comboStep >= SWORD.comboDamage.length) {
       this.nextSwingAt = now + SWORD.comboCooldownMs;
       this.comboStep = 0; // chain consumed; next swing starts fresh
+      // Final beat: slow through its swing only, not the recovery cooldown.
+      this.slowUntil = now + SWORD.swingMs;
     } else {
       this.nextSwingAt = now + SWORD.beatIntervalMs;
+      // Mid-combo: stay slowed through the swing and the gap to the next beat.
+      this.slowUntil = now + SWORD.beatIntervalMs;
     }
     this.comboExpiresAt = now + SWORD.comboResetMs;
   }
