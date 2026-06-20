@@ -4,8 +4,9 @@ import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { GameScene } from './scenes/GameScene';
 import { UIScene } from './scenes/UIScene';
+import { GameState } from './state/GameState';
 
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
   width: VIEW_WIDTH,
@@ -25,3 +26,12 @@ new Phaser.Game({
   },
   scene: [BootScene, PreloadScene, GameScene, UIScene],
 });
+
+// Test-only handles for the headless smoke harness (scripts/smoke.mjs). Gated on
+// a build flag (set by `npm run smoke`) so a real production build never exposes
+// internals on window. __GAME reaches live scenes/entities; __STATE is the data.
+if (import.meta.env.VITE_EXPOSE_STATE) {
+  const w = window as unknown as Record<string, unknown>;
+  w.__GAME = game;
+  w.__STATE = GameState;
+}
