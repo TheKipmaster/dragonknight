@@ -23,3 +23,16 @@ export interface Damageable {
 export function isDamageable(obj: unknown): obj is Damageable {
   return typeof (obj as { hit?: unknown } | null)?.hit === 'function';
 }
+
+/**
+ * An entity that deals damage on contact (e.g. the Walker). Distinguishes
+ * hostile bodies from inert Damageables like the practice dummy, which can be
+ * struck but never strike back.
+ */
+export interface ContactAttacker {
+  contactAttack(): Attack;
+}
+
+export function isContactAttacker(obj: unknown): obj is ContactAttacker {
+  return typeof (obj as { contactAttack?: unknown } | null)?.contactAttack === 'function';
+}

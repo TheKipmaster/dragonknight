@@ -19,6 +19,7 @@ export class PreloadScene extends Phaser.Scene {
     this.makeRect(TEX.floor, TILE, TILE, 0x23232f, 0x2b2b3a);
     this.makeRect(TEX.heart, 12, 12, 0xff4d6d, 0x8a1f33);
     this.makeRect(TEX.dummy, TILE, TILE, 0xc9a04e, 0x7a5e23);
+    this.makeRect(TEX.walker, TILE, TILE, 0xd64550, 0x7a1f29);
 
     this.scene.start('Game');
     this.scene.launch('UI'); // parallel HUD scene (ADR 0003)

@@ -7,7 +7,9 @@ import Phaser from 'phaser';
 export const eventBus = new Phaser.Events.EventEmitter();
 
 export const GameEvent = {
+  /** Hearts changed (took damage, healed, respawned) — the HUD redraws. */
   PlayerDamaged: 'player-damaged',
+  PlayerDied: 'player-died',
   RoomChanged: 'room-changed',
   ItemPickedUp: 'item-picked-up',
 } as const;

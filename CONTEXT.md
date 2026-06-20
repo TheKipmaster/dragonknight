@@ -44,8 +44,8 @@ An item the Player picks up that opens a locked Door. The core progression gate 
 _Avoid_: Pass, Token.
 
 **Switch**:
-A floor trigger that changes the Dungeon when activated — e.g. opens a Door or path. Activated by the Player standing on it or by a Block pushed onto it.
-_Avoid_: Button, Plate, Lever (a Lever would be a separate hand-operated variant).
+A floor trigger the Player activates by standing on it (or by a Block pushed onto it). Its effect is configurable: open a Door or path, or — while held down — spawn Enemies on a cadence. Changes appearance to show its pressed state.
+_Avoid_: Button, Pressure Plate, Plate, Lever (a Lever would be a separate hand-operated variant). A spawner is a Switch with a spawning effect, not a distinct term.
 
 **Block**:
 A pushable object used in puzzles, typically shoved onto a Switch. Moves in grid-aligned steps for predictability.
