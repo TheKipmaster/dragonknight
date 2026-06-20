@@ -3,6 +3,7 @@ import { ENEMY, TEX } from '../config/constants';
 import { Health } from '../components/Health';
 import { Knockback } from '../components/Knockback';
 import { AIController } from '../components/AIController';
+import { inactiveState } from '../components/aggro';
 import type { Attack, ContactAttacker, Damageable } from '../combat/Attack';
 
 /**
@@ -10,7 +11,8 @@ import type { Attack, ContactAttacker, Damageable } from '../combat/Attack';
  * target (naive seek, no pathfinding — ADR-noted) and deals contact damage. No
  * attacks of its own. Its tiny FSM lives in an AIController:
  *
- *   chase → (struck) → hurt → chase     and onDeath → die()
+ *   inactive → (Player in range) → chase → (struck) → hurt → chase
+ *   and onDeath → die()
  */
 export class Walker
   extends Phaser.Physics.Arcade.Sprite
@@ -39,6 +41,7 @@ export class Walker
     this.knockback = new Knockback(this);
 
     this.ai = new AIController()
+      .add('inactive', inactiveState(this, target, ENEMY.aggroRange, () => this.ai.change('chase')))
       .add('chase', { update: () => this.chase() })
       .add('hurt', {
         update: () => {
@@ -46,7 +49,7 @@ export class Walker
           if (this.scene.time.now >= this.hurtUntil) this.ai.change('chase');
         },
       });
-    this.ai.change('chase');
+    this.ai.change('inactive');
   }
 
   preUpdate(time: number, delta: number): void {

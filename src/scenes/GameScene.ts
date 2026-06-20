@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { PracticeDummy } from '../entities/PracticeDummy';
 import { Walker } from '../entities/Walker';
+import { Charger } from '../entities/Charger';
 import { PlaceholderRoom } from '../world/PlaceholderRoom';
 import { Switch } from '../world/Switch';
 import type { Room } from '../world/Room';
@@ -45,6 +46,13 @@ export class GameScene extends Phaser.Scene {
     this.player = new Player(this, x, y);
     this.player.setDepth(1);
     this.player.attackTargets = this.attackables;
+
+    // Telegraphed enemy: one Charger placed statically to iterate on feel. This
+    // is a stopgap rig until Tiled Rooms own real enemy placement; like the
+    // spawned Walkers it lives in `hostiles`, so it is cleared on respawn.
+    const charger = new Charger(this, x, y - TILE * 6, this.player);
+    this.attackables.add(charger);
+    this.hostiles.add(charger);
 
     // Spawner Switch: one Walker per interval while the Player stands on it.
     this.spawnSwitch = new Switch(this, x, y - TILE * 3, SPAWNER.intervalMs, () =>

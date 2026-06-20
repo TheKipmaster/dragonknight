@@ -44,12 +44,12 @@ inventory UI · more than two enemy types · pathfinding · gamepad input.
 - [x] Practice dummy (combat test rig)
 - [x] Player damage loop: Hearts, i-frames, knockback, death → respawn
 - [x] First mobile enemy: `Walker` (naive seek, contact damage) on the `AIController` FSM
+- [x] Telegraphed enemy: `Charger` (committed wind-up → lunge) on the `AIController` FSM; reusable `inactive`/aggro state both enemies share
 - [x] Spawner `Switch` (spawns Walkers while stood on; colour change)
 - [x] Headless smoke test (boot + behavioural assertion)
 
 ### Remaining for the MVP
 - [ ] **Tiled Room(s) + Door transitions** — replace the placeholder Room; exercise the Room lifecycle (ADR 0001) for real
-- [ ] **Telegraphed enemy** — second AI shape (wind-up → strike), enemy-initiated `Attack`
 - [ ] **Key + locked Door** — the progression gate
 - [ ] **Push-Block puzzle** — `Block` + `Switch` (door-opening flavour of the Switch)
 - [ ] **Treasure + win state** — final Room goal

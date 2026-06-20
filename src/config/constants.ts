@@ -26,6 +26,7 @@ export const TEX = {
   heart: 'heart',
   dummy: 'dummy',
   walker: 'walker',
+  charger: 'charger',
 } as const;
 
 /**
@@ -56,10 +57,37 @@ export const SWORD = {
  *  The first enemy: walks straight at the Player and deals contact damage. */
 export const ENEMY = {
   speed: 55, //          chase speed (px/s); slower than the Player (90)
+  aggroRange: 120, //    dormant until the Player comes within this distance (px)
   maxHp: 10, //           hit points; a full combo (2+3+5=10) over-kills it
   contactDamage: 1, //   half-Hearts removed per touch (1 = half a Heart)
   contactKnockback: 180,//impulse applied to the Player on contact (px/s)
   hurtMs: 180, //        stun/knockback window after being hit by the sword (ms)
+} as const;
+
+/** ── Charger enemy tuning ─────────────────────────────────────────────────
+ *  The telegraphed enemy: a lunging charger. It stalks the Player, then commits
+ *  to a wind-up (the Telegraph) that locks a lunge lane toward the Player's
+ *  position at that instant; after the wind-up it dashes down that lane. The
+ *  wind-up is *committed* — striking it mid-wind-up or mid-lunge deals damage but
+ *  can't shove or cancel it. The counterplay is to step out of the telegraphed
+ *  lane and punish the vulnerable recovery.
+ *
+ *  Two damage profiles: a connecting lunge is the real threat; brushing the body
+ *  passively (while it chases or recovers) only chips like a Walker touch. */
+export const CHARGER = {
+  maxHp: 30, //          hit points; tanky — three full combos (3×10=30) to fell it
+  chaseSpeed: 45, //     stalk speed (px/s); slower than the Walker (55)
+  aggroRange: 95, //    dormant until the Player comes within this distance (px)
+  triggerRange: 70, //   distance to the Player that commits a wind-up (px)
+  windupMs: 600, //      Telegraph duration — the Player's reaction window (ms)
+  lungeSpeed: 260, //    dash speed during the strike (px/s)
+  lungeMs: 260, //       dash duration (ms); distance ≈ speed×ms ≈ 68px (~4 tiles)
+  recoverMs: 700, //     vulnerable whiff-recovery after a lunge (ms)
+  hurtMs: 180, //        stagger window when struck OUTSIDE the commit (ms)
+  lungeDamage: 2, //     half-Hearts on a connecting lunge (2 = a full Heart)
+  lungeKnockback: 240, //impulse applied to the Player by a lunge (px/s)
+  contactDamage: 1, //   passive body-contact half-Hearts (1 = half a Heart)
+  contactKnockback: 160,//impulse applied to the Player by passive contact (px/s)
 } as const;
 
 /** ── Spawner Switch tuning ────────────────────────────────────────────────
