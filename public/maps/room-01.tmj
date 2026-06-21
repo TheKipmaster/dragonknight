@@ -184,7 +184,7 @@
     1,
     0,
     0,
-    0,
+    1,
     0,
     1,
     1,
@@ -512,7 +512,7 @@
     0,
     5,
     4,
-    4,
+    0,
     5,
     0,
     0,
@@ -717,6 +717,18 @@
     },
     {
      "id": 3,
+     "name": "from-debug",
+     "type": "spawn",
+     "point": true,
+     "x": 40.0,
+     "y": 120.0,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true
+    },
+    {
+     "id": 4,
      "name": "door",
      "type": "door",
      "x": 320,
@@ -737,10 +749,33 @@
        "value": "from-west"
       }
      ]
+    },
+    {
+     "id": 5,
+     "name": "door",
+     "type": "door",
+     "x": 0,
+     "y": 112,
+     "width": 16,
+     "height": 16,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "targetRoom",
+       "type": "string",
+       "value": "room-debug"
+      },
+      {
+       "name": "targetSpawn",
+       "type": "string",
+       "value": "from-room01"
+      }
+     ]
     }
    ]
   }
  ],
  "nextlayerid": 4,
- "nextobjectid": 4
+ "nextobjectid": 6
 }

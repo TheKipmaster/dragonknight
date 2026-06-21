@@ -50,4 +50,9 @@ export class Switch {
     }
     this.pressedThisFrame = false;
   }
+
+  /** Release the Switch's zone (and its overlap body) on Room teardown. */
+  destroy(): void {
+    this.zone.destroy();
+  }
 }

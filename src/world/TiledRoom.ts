@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { TEX, TILESET_NAME } from '../config/constants';
-import type { Room } from './Room';
+import { TEX, TILE, TILESET_NAME } from '../config/constants';
+import type { DoorTrigger, Room } from './Room';
 
 /**
  * A Room backed by a Tiled map (ADR 0001).
@@ -23,12 +23,17 @@ export class TiledRoom implements Room {
   heightPx = 0;
   readonly spawn = new Phaser.Math.Vector2();
 
-  /** All named spawn markers, so a future door can place the Player by name. */
+  /** All named spawn markers, so a door can place the Player by name. */
   readonly spawns = new Map<string, Phaser.Math.Vector2>();
+
+  readonly doors: DoorTrigger[] = [];
 
   private map?: Phaser.Tilemaps.Tilemap;
   private layers: Phaser.Tilemaps.TilemapLayer[] = [];
   private wallLayer?: Phaser.Tilemaps.TilemapLayer;
+  /** Colliders this Room created; torn down on deactivate so they never leak
+   *  across a transition (the wall layer they reference is being destroyed). */
+  private readonly colliders: Phaser.Physics.Arcade.Collider[] = [];
 
   constructor(
     private scene: Phaser.Scene,
@@ -67,28 +72,60 @@ export class TiledRoom implements Room {
     this.widthPx = map.widthInPixels;
     this.heightPx = map.heightInPixels;
 
-    this.readSpawns(map);
+    this.readObjects(map);
 
     this.scene.physics.world.setBounds(0, 0, this.widthPx, this.heightPx);
     this.scene.cameras.main.setBounds(0, 0, this.widthPx, this.heightPx);
   }
 
-  /** Collect point objects from the `objects` layer; `start` is the default spawn. */
-  private readSpawns(map: Phaser.Tilemaps.Tilemap): void {
+  /**
+   * Read the `objects` layer: named point objects become spawn markers (`start`
+   * is the default), and `door` rectangles become overlap zones carrying where
+   * they lead. Doors are invisible Zones — visual-free trigger volumes.
+   */
+  private readObjects(map: Phaser.Tilemaps.Tilemap): void {
     this.spawns.clear();
+    this.doors.length = 0;
     const objects = map.getObjectLayer('objects')?.objects ?? [];
+
     for (const obj of objects) {
+      const x = obj.x ?? 0;
+      const y = obj.y ?? 0;
       if (obj.point && obj.name) {
-        this.spawns.set(obj.name, new Phaser.Math.Vector2(obj.x, obj.y));
+        this.spawns.set(obj.name, new Phaser.Math.Vector2(x, y));
+      } else if (obj.name === 'door') {
+        const props = this.props(obj);
+        const targetRoom = props.targetRoom;
+        const targetSpawn = props.targetSpawn;
+        if (!targetRoom || !targetSpawn) continue;
+        const w = obj.width || TILE;
+        const h = obj.height || TILE;
+        const zone = this.scene.add.zone(x + w / 2, y + h / 2, w, h);
+        this.scene.physics.add.existing(zone, true); // static body for overlap
+        this.doors.push({ zone, targetRoom, targetSpawn });
       }
     }
+
     const start = this.spawns.get('start') ?? [...this.spawns.values()][0];
     if (start) this.spawn.copy(start);
     else this.spawn.set(this.widthPx / 2, this.heightPx / 2);
   }
 
+  /** Flatten a Tiled object's custom properties into a string lookup. */
+  private props(obj: Phaser.Types.Tilemaps.TiledObject): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const p of obj.properties ?? []) out[p.name] = String(p.value);
+    return out;
+  }
+
+  spawnAt(name: string): Phaser.Math.Vector2 | undefined {
+    return this.spawns.get(name)?.clone();
+  }
+
   addColliders(obj: Phaser.Types.Physics.Arcade.ArcadeColliderType): void {
-    if (this.wallLayer) this.scene.physics.add.collider(obj, this.wallLayer);
+    if (this.wallLayer) {
+      this.colliders.push(this.scene.physics.add.collider(obj, this.wallLayer));
+    }
   }
 
   isSolidAt(x: number, y: number): boolean {
@@ -97,6 +134,10 @@ export class TiledRoom implements Room {
   }
 
   deactivate(): void {
+    for (const collider of this.colliders) collider.destroy();
+    this.colliders.length = 0;
+    for (const door of this.doors) door.zone.destroy();
+    this.doors.length = 0;
     for (const layer of this.layers) layer.destroy();
     this.layers = [];
     this.wallLayer = undefined;

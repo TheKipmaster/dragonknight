@@ -3,7 +3,7 @@ import { Player } from '../entities/Player';
 import { PracticeDummy } from '../entities/PracticeDummy';
 import { Walker } from '../entities/Walker';
 import { Charger } from '../entities/Charger';
-import { TiledRoom } from '../world/TiledRoom';
+import { RoomManager } from '../world/RoomManager';
 import { Switch } from '../world/Switch';
 import type { Room } from '../world/Room';
 import { GameState } from '../state/GameState';
@@ -12,52 +12,99 @@ import { isContactAttacker } from '../combat/Attack';
 import { SPAWNER, TILE } from '../config/constants';
 
 /**
- * Gameplay scene: activates the current Room and runs entities/physics.
- * Only one Room is active at a time (ADR 0001).
+ * Gameplay scene. A RoomManager owns the active Room and drives transitions
+ * (ADR 0001); this scene owns the Player and the *content* of Rooms — the entity
+ * rig built per Room in populate()/clearContent() via the manager's hooks.
  *
- * Two enemy groups: `attackables` is everything the sword can hit (dummies +
- * Walkers); `hostiles` is the subset that deals contact damage and collides
- * with walls (Walkers). Walkers live in both; clearing `hostiles` on respawn
- * destroys them and removes them from `attackables` too.
+ * Entity groups (all persist across transitions; the manager only swaps their
+ * members): `attackables` is everything the sword can hit (dummies + enemies);
+ * `hostiles` is the subset that deals contact damage; `solids` is non-hostile
+ * props that block movement (dummies). An entity can be in several groups.
  */
 export class GameScene extends Phaser.Scene {
-  private room!: Room;
+  private manager!: RoomManager;
   private player!: Player;
   private attackables!: Phaser.GameObjects.Group;
   private hostiles!: Phaser.GameObjects.Group;
   private solids!: Phaser.GameObjects.Group;
-  private spawnSwitch!: Switch;
+
+  private spawnSwitch?: Switch;
+  private switchOverlap?: Phaser.Physics.Arcade.Collider;
 
   constructor() {
     super('Game');
   }
 
   create(): void {
-    this.room = new TiledRoom(this, GameState.activeRoomId);
-    this.room.activate();
-
     this.attackables = this.add.group();
     this.hostiles = this.add.group();
-    // Solid, non-hostile props: blocked like walls, never deal contact damage.
     this.solids = this.add.group();
 
-    const { x, y } = this.room.spawn;
-    // Practice dummies flanking the spawn (sword targets, never hostile, but
-    // solid — they're in `attackables` so the sword hits them and in `solids`
-    // so the Player and enemies can't walk through them).
+    // The Player is the through-line across Rooms: created once, repositioned by
+    // the manager on each transition.
+    this.player = new Player(this, 0, 0);
+    this.player.setDepth(1);
+    this.player.attackTargets = this.attackables;
+
+    // Physics relationships that don't depend on which Room is active. A collider
+    // registered against a Group also covers members added to it later, so these
+    // survive transitions untouched (only Room walls are re-wired per Room).
+    this.physics.add.collider(this.hostiles, this.hostiles);
+    this.physics.add.collider(this.player, this.solids);
+    this.physics.add.collider(this.hostiles, this.solids);
+    this.physics.add.overlap(this.player, this.hostiles, this.onContact, undefined, this);
+
+    this.manager = new RoomManager(this, this.player, {
+      onEnter: (room) => this.populate(room),
+      onExit: () => this.clearContent(),
+    });
+    this.manager.enter(GameState.activeRoomId);
+
+    eventBus.on(GameEvent.PlayerDied, this.onPlayerDied, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      eventBus.off(GameEvent.PlayerDied, this.onPlayerDied, this);
+    });
+  }
+
+  update(time: number): void {
+    this.spawnSwitch?.update(time);
+  }
+
+  /** Per-Room setup (manager onEnter): wire Room walls, then build its content. */
+  private populate(room: Room): void {
+    room.addColliders(this.player);
+    room.addColliders(this.hostiles);
+    // For now only the debug Room carries the practice rig; the others are bare
+    // walkable Rooms. (Future: Rooms author their own entity placement.)
+    if (room.id === 'room-debug') this.buildPracticeRig(room);
+  }
+
+  /** Per-Room teardown (manager onExit): destroy everything populate() created. */
+  private clearContent(): void {
+    // Every entity is in `attackables`; clearing all three groups with destroy
+    // empties them. A shared member destroyed twice is a safe no-op in Phaser.
+    this.attackables.clear(true, true);
+    this.hostiles.clear(true, true);
+    this.solids.clear(true, true);
+    this.switchOverlap?.destroy();
+    this.switchOverlap = undefined;
+    this.spawnSwitch?.destroy();
+    this.spawnSwitch = undefined;
+  }
+
+  /** The debug Room's iteration rig: dummies, a Charger, and a Walker spawner. */
+  private buildPracticeRig(room: Room): void {
+    const { x, y } = room.spawn;
+
+    // Practice dummies flanking the spawn: in `attackables` (sword hits them) and
+    // `solids` (block movement), never hostile.
     for (const dx of [-40, 40]) {
       const dummy = new PracticeDummy(this, x + dx, y);
       this.attackables.add(dummy);
       this.solids.add(dummy);
     }
 
-    this.player = new Player(this, x, y);
-    this.player.setDepth(1);
-    this.player.attackTargets = this.attackables;
-
-    // Telegraphed enemy: one Charger placed statically to iterate on feel. This
-    // is a stopgap rig until Tiled Rooms own real enemy placement; like the
-    // spawned Walkers it lives in `hostiles`, so it is cleared on respawn.
+    // Telegraphed enemy: one Charger to iterate on feel; cleared on respawn.
     const charger = new Charger(this, x, y - TILE * 6, this.player);
     this.attackables.add(charger);
     this.hostiles.add(charger);
@@ -66,29 +113,9 @@ export class GameScene extends Phaser.Scene {
     this.spawnSwitch = new Switch(this, x, y - TILE * 3, SPAWNER.intervalMs, () =>
       this.spawnWalker(),
     );
-
-    this.room.addColliders(this.player);
-    this.room.addColliders(this.hostiles);
-    this.physics.add.collider(this.hostiles, this.hostiles);
-    this.physics.add.collider(this.player, this.solids);
-    this.physics.add.collider(this.hostiles, this.solids);
-
-    this.physics.add.overlap(this.player, this.hostiles, this.onContact, undefined, this);
-    this.physics.add.overlap(this.player, this.spawnSwitch.zone, () =>
-      this.spawnSwitch.notifyOverlap(),
+    this.switchOverlap = this.physics.add.overlap(this.player, this.spawnSwitch.zone, () =>
+      this.spawnSwitch?.notifyOverlap(),
     );
-
-    eventBus.on(GameEvent.PlayerDied, this.onPlayerDied, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      eventBus.off(GameEvent.PlayerDied, this.onPlayerDied, this);
-    });
-
-    this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
-    this.cameras.main.roundPixels = true;
-  }
-
-  update(time: number): void {
-    this.spawnSwitch.update(time);
   }
 
   /** Enemy touched the Player: route contact damage through the Attack chokepoint. */
@@ -98,13 +125,14 @@ export class GameScene extends Phaser.Scene {
 
   /** Spawn one Walker at a wall-free point in a ring around the Player. */
   private spawnWalker(): void {
+    const room = this.manager.room;
     const { x: px, y: py } = this.player;
     for (let i = 0; i < SPAWNER.attempts; i++) {
       const angle = Math.random() * Math.PI * 2;
       const dist = Phaser.Math.Between(SPAWNER.minRadius, SPAWNER.maxRadius);
-      const x = Phaser.Math.Clamp(px + Math.cos(angle) * dist, TILE * 1.5, this.room.widthPx - TILE * 1.5);
-      const y = Phaser.Math.Clamp(py + Math.sin(angle) * dist, TILE * 1.5, this.room.heightPx - TILE * 1.5);
-      if (this.room.isSolidAt(x, y)) continue;
+      const x = Phaser.Math.Clamp(px + Math.cos(angle) * dist, TILE * 1.5, room.widthPx - TILE * 1.5);
+      const y = Phaser.Math.Clamp(py + Math.sin(angle) * dist, TILE * 1.5, room.heightPx - TILE * 1.5);
+      if (room.isSolidAt(x, y)) continue;
 
       const walker = new Walker(this, x, y, this.player);
       this.attackables.add(walker);
@@ -116,8 +144,9 @@ export class GameScene extends Phaser.Scene {
 
   private onPlayerDied(): void {
     GameState.player.halfHearts = GameState.player.maxHalfHearts;
-    this.player.respawn(this.room.spawn.x, this.room.spawn.y);
-    this.hostiles.clear(true, true); // destroy all live Walkers
+    const spawn = this.manager.room.spawn;
+    this.player.respawn(spawn.x, spawn.y);
+    this.hostiles.clear(true, true); // destroy all live Walkers (and the Charger)
     eventBus.emit(GameEvent.PlayerDamaged); // refresh HUD to full
   }
 }

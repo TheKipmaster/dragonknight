@@ -300,14 +300,18 @@ def build_maps():
     floor, walls, grid = carve(w, h, inside, seed=1)
     cx, cy = w // 2, h // 2
     east_door = edge_on_axis(inside, cx, cy, 1, 0, w, h)
+    west_door = edge_on_axis(inside, cx, cy, -1, 0, w, h)
     open_door(floor, walls, w, east_door)
+    open_door(floor, walls, w, west_door)
     for (px, py) in [(7, 6), (8, 6), (13, 8), (14, 8)]:   # a couple of pillars
         pillar(floor, walls, grid, w, px, py)
     floor[cy * w + cx] = GID_RUBBLE                       # decor near centre
     objects = [
         point(1, "start", 4, cy),                        # new-game start
         point(2, "from-east", east_door[0] - 2, cy),     # arrival from the east door
-        door(3, east_door[0], east_door[1], "room-02", "from-west"),
+        point(3, "from-debug", west_door[0] + 2, cy),    # arrival from the debug room
+        door(4, east_door[0], east_door[1], "room-02", "from-west"),
+        door(5, west_door[0], west_door[1], "room-debug", "from-room01"),
     ]
     (MAPS_DIR / "room-01.tmj").write_text(json.dumps(make_map(w, h, floor, walls, objects), indent=1))
     print(f"wrote {MAPS_DIR/'room-01.tmj'} ({w}x{h}, round-ish)")
@@ -332,19 +336,24 @@ def build_maps():
     # ── room-debug: a Tiled twin of the old PlaceholderRoom — a rectangular 30x22
     #    chamber with the same eight interior pillars. The player spawns here.
     #    "inside" is everything but the 1-tile border, so carve() rings it in wall
-    #    (smoothing leaves right-angles untouched). No doors, like the original.
+    #    (smoothing leaves right-angles untouched). One east door → room-01.
     w, h = 30, 22
     inside = lambda x, y: 1 <= x <= w - 2 and 1 <= y <= h - 2
     floor, walls, grid = carve(w, h, inside, seed=3)
     for (px, py) in [(10, 8), (10, 9), (19, 8), (19, 9),
                      (14, 14), (15, 14), (14, 15), (15, 15)]:
         pillar(floor, walls, grid, w, px, py)
-    # Spawn dead-centre, matching PlaceholderRoom's (widthPx/2, heightPx/2).
-    objects = [{
-        "id": 1, "name": "start", "type": "spawn", "point": True,
-        "x": w * TILE / 2, "y": h * TILE / 2,
-        "width": 0, "height": 0, "rotation": 0, "visible": True,
-    }]
+    cx, cy = w // 2, h // 2
+    east_door = edge_on_axis(inside, cx, cy, 1, 0, w, h)
+    open_door(floor, walls, w, east_door)
+    objects = [
+        # Spawn dead-centre, matching the old PlaceholderRoom's (widthPx/2, heightPx/2).
+        {"id": 1, "name": "start", "type": "spawn", "point": True,
+         "x": w * TILE / 2, "y": h * TILE / 2,
+         "width": 0, "height": 0, "rotation": 0, "visible": True},
+        point(2, "from-room01", east_door[0] - 2, cy),
+        door(3, east_door[0], east_door[1], "room-01", "from-debug"),
+    ]
     (MAPS_DIR / "room-debug.tmj").write_text(json.dumps(make_map(w, h, floor, walls, objects), indent=1))
     print(f"wrote {MAPS_DIR/'room-debug.tmj'} ({w}x{h}, rectangular debug room)")
 

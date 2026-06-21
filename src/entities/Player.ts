@@ -229,6 +229,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements Damageable {
     if (GameState.player.halfHearts <= 0) eventBus.emit(GameEvent.PlayerDied);
   }
 
+  /** Reposition the Player without the death reset (used on Room transitions). */
+  placeAt(x: number, y: number): void {
+    this.scene.tweens.killTweensOf(this);
+    this.setPosition(x, y);
+    this.setVelocity(0, 0);
+  }
+
   /** Reposition and reset after death; the scene drives this on PlayerDied. */
   respawn(x: number, y: number): void {
     this.scene.tweens.killTweensOf(this);
