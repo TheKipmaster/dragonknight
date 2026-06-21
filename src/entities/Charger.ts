@@ -4,6 +4,7 @@ import { Health } from '../components/Health';
 import { Knockback } from '../components/Knockback';
 import { AIController } from '../components/AIController';
 import { inactiveState } from '../components/aggro';
+import type { Navigator } from '../components/FlowField';
 import type { Attack, ContactAttacker, Damageable } from '../combat/Attack';
 
 const TELEGRAPH_TINT = 0xffe089; //  warning hue worn during the wind-up
@@ -48,6 +49,7 @@ export class Charger
     x: number,
     y: number,
     private readonly target: Phaser.GameObjects.Sprite,
+    private readonly nav: Navigator,
   ) {
     super(scene, x, y, TEX.charger);
     scene.add.existing(this);
@@ -92,10 +94,18 @@ export class Charger
     this.ai.update(delta);
   }
 
-  /** chase: stalk straight at the Player; commit a wind-up once in range. */
+  /** chase: close distance on the Player — routing around walls via the flow
+   *  field (straight-line fallback near the target/off-grid) — and commit a
+   *  wind-up once in range. The lunge itself stays a straight line locked at
+   *  wind-up start (see beginWindup); only the approach paths. */
   private chase(): void {
-    const angle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
-    this.setVelocity(Math.cos(angle) * CHARGER.chaseSpeed, Math.sin(angle) * CHARGER.chaseSpeed);
+    const dir = this.nav.steer(this.x, this.y);
+    if (dir) {
+      this.setVelocity(dir.x * CHARGER.chaseSpeed, dir.y * CHARGER.chaseSpeed);
+    } else {
+      const angle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
+      this.setVelocity(Math.cos(angle) * CHARGER.chaseSpeed, Math.sin(angle) * CHARGER.chaseSpeed);
+    }
 
     const dist = Phaser.Math.Distance.Between(this.x, this.y, this.target.x, this.target.y);
     if (dist <= CHARGER.triggerRange) this.ai.change('windup');

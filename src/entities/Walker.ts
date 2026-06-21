@@ -4,6 +4,7 @@ import { Health } from '../components/Health';
 import { Knockback } from '../components/Knockback';
 import { AIController } from '../components/AIController';
 import { inactiveState } from '../components/aggro';
+import type { Navigator } from '../components/FlowField';
 import type { Attack, ContactAttacker, Damageable } from '../combat/Attack';
 
 /**
@@ -28,6 +29,7 @@ export class Walker
     x: number,
     y: number,
     private readonly target: Phaser.GameObjects.Sprite,
+    private readonly nav: Navigator,
   ) {
     super(scene, x, y, TEX.walker);
     scene.add.existing(this);
@@ -57,7 +59,14 @@ export class Walker
     this.ai.update(delta);
   }
 
+  /** Route around walls via the shared flow field; fall back to a straight line
+   *  on the final approach (target's own cell) or when off the navigable grid. */
   private chase(): void {
+    const dir = this.nav.steer(this.x, this.y);
+    if (dir) {
+      this.setVelocity(dir.x * ENEMY.speed, dir.y * ENEMY.speed);
+      return;
+    }
     const angle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
     this.setVelocity(Math.cos(angle) * ENEMY.speed, Math.sin(angle) * ENEMY.speed);
   }

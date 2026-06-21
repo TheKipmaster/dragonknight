@@ -6,6 +6,8 @@ import { Charger } from '../entities/Charger';
 import { Key } from '../entities/Key';
 import { RoomManager } from '../world/RoomManager';
 import { Switch } from '../world/Switch';
+import { FlowField } from '../components/FlowField';
+import { PathfindingDebug } from '../debug/PathfindingDebug';
 import type { Room } from '../world/Room';
 import { GameState } from '../state/GameState';
 import { eventBus, GameEvent } from '../state/eventBus';
@@ -33,6 +35,12 @@ export class GameScene extends Phaser.Scene {
   private spawnSwitch?: Switch;
   private switchOverlap?: Phaser.Physics.Arcade.Collider;
 
+  /** Shared enemy pathfinding for the active Room: one BFS distance map from the
+   *  Player serves the whole hostile swarm. Rebuilt per Room, re-aimed per frame. */
+  private nav!: FlowField;
+  /** Toggleable flow-field visualiser (backtick); a dev aid, off by default. */
+  private pathDebug!: PathfindingDebug;
+
   constructor() {
     super('Game');
   }
@@ -58,6 +66,8 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.hostiles, this.onContact, undefined, this);
     this.physics.add.overlap(this.player, this.pickups, this.onPickup, undefined, this);
 
+    this.pathDebug = new PathfindingDebug(this);
+
     this.manager = new RoomManager(this, this.player, {
       onEnter: (room) => this.populate(room),
       onExit: () => this.clearContent(),
@@ -71,13 +81,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number): void {
+    // Re-aim the shared flow field at the Player. retarget() early-outs unless
+    // the Player crossed into a new cell, so the BFS only runs when needed.
+    this.nav.retarget(this.player.x, this.player.y);
     this.spawnSwitch?.update(time);
+    this.pathDebug.update();
   }
 
   /** Per-Room setup (manager onEnter): wire Room walls, then build its content. */
   private populate(room: Room): void {
     room.addColliders(this.player);
     room.addColliders(this.hostiles);
+
+    // One flow field per Room (walls are static); enemies share it for chasing.
+    this.nav = new FlowField(room.buildNavGrid());
 
     // Spawn map-authored items, skipping any already collected (they don't respawn).
     for (const item of room.items) {
@@ -89,6 +106,10 @@ export class GameScene extends Phaser.Scene {
     // For now only the debug Room carries the practice rig; the others are bare
     // walkable Rooms. (Future: Rooms author their own entity placement.)
     if (room.id === 'room-debug') this.buildPracticeRig(room);
+
+    // Seed the field once static obstacles (e.g. dummies) are stamped in.
+    this.nav.retarget(this.player.x, this.player.y);
+    this.pathDebug.setField(this.nav);
   }
 
   /** Per-Room teardown (manager onExit): destroy everything populate() created. */
@@ -115,10 +136,16 @@ export class GameScene extends Phaser.Scene {
       const dummy = new PracticeDummy(this, x + dx, y);
       this.attackables.add(dummy);
       this.solids.add(dummy);
+      // Dummies are static solids the wall layer doesn't know about — stamp their
+      // full body footprint into the flow field so enemies route around them
+      // instead of grinding. (A dummy is placed off-grid, so its body straddles
+      // two cells; stamp every cell it covers, not just its centre.)
+      const b = dummy.body as Phaser.Physics.Arcade.Body;
+      this.nav.blockRect(b.left, b.top, b.right, b.bottom);
     }
 
     // Telegraphed enemy: one Charger to iterate on feel; cleared on respawn.
-    const charger = new Charger(this, x, y - TILE * 6, this.player);
+    const charger = new Charger(this, x, y - TILE * 6, this.player, this.nav);
     this.attackables.add(charger);
     this.hostiles.add(charger);
 
@@ -157,7 +184,7 @@ export class GameScene extends Phaser.Scene {
       const y = Phaser.Math.Clamp(py + Math.sin(angle) * dist, TILE * 1.5, room.heightPx - TILE * 1.5);
       if (room.isSolidAt(x, y)) continue;
 
-      const walker = new Walker(this, x, y, this.player);
+      const walker = new Walker(this, x, y, this.player, this.nav);
       this.attackables.add(walker);
       this.hostiles.add(walker);
       return;

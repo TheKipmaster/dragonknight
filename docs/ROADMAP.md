@@ -61,60 +61,64 @@ inventory UI · more than two enemy types · gamepad input.
 - [x] Headless smoke test (boot + behavioural assertion)
 - [x] **Tiled Room(s) + Door transitions** — replace the placeholder Room; exercise the Room lifecycle (ADR 0001) for real (collision contract + RoomManager: ADR 0005)
 - [x] **Key + locked Door** — the progression gate (map-authored lock/key; persistent in `GameState.progress`)
+- [x] **Smarter enemies (pathfinding)** — enemies route around walls on a shared flow field
+      (one weighted-Dijkstra flood from the Player serves the swarm, with a wall-clearance
+      penalty so paths swing wide of corners; ADR 0007). Governs approach/chase only; the
+      Charger's committed lunge stays a straight line. Includes a 'P'-toggle debug overlay.
 
 ### Remaining for the MVP
 
 - [ ] **Treasure + win state** — the goal in the final Room. Touching the Treasure is the
-  win: it fires a one-shot win **Cutscene**, then returns to the **Title screen**, closing
-  the loop so the slice is replayable from the front door.
-- [ ] **Smarter enemies (pathfinding)** — enemies route _around_ walls instead of
-  snagging on them, pathing on the Tiled collision grid (ADR 0005). Proximity aggro is
-  unchanged (line-of-sight is deferred — see backlog). Governs **approach/chase** only:
-  the `Walker` paths whenever aggro'd; the `Charger` paths to close distance, but its
-  committed telegraphed lunge stays a **straight line** at the Player's commit-time
-  position (no homing). Algorithm deferred to implementation: shared Dijkstra/flow-field
-  (one distance map serves a Walker swarm) vs per-enemy A* (simpler, strains under swarms).
+      win: it fires a one-shot win **Cutscene**, then returns to the **Title screen**, closing
+      the loop so the slice is replayable from the front door.
 - [ ] **Lighting (atmospheric)** — a Room can be authored darker (a per-map ambient
-  darkness property, ADR 0001), with **light sources** casting a radial gradient. Mood
-  only — never gates visibility (geometry, Enemies, Player stay visible; LoS-style fog is
-  out of scope). A light source is one **emitter** concept (radius/intensity/colour)
-  positioned by an owner: static torches authored in Tiled, plus entity-owned emitters so
-  the **Treasure glows** (draws the eye to the goal) and the **Player** carries a faint
-  aura (no black-silhouette in dim Rooms). Sequence with the Art pass — placeholder
-  primitives have no normal maps, so favour an overlay/render-texture approach over
-  Phaser's Light2D pipeline.
+      darkness property, ADR 0001), with **light sources** casting a radial gradient. Mood
+      only — never gates visibility (geometry, Enemies, Player stay visible; LoS-style fog is
+      out of scope). A light source is one **emitter** concept (radius/intensity/colour)
+      positioned by an owner: static torches authored in Tiled, plus entity-owned emitters so
+      the **Treasure glows** (draws the eye to the goal) and the **Player** carries a faint
+      aura (no black-silhouette in dim Rooms). Sequence with the Art pass — placeholder
+      primitives have no normal maps, so favour an overlay/render-texture approach over
+      Phaser's Light2D pipeline.
 - [ ] **Art pass** — revisit placeholder primitives once the feel is proven. Now has two
-  dependents: it supplies the **Portraits** the Dialogue system needs, and it should land
-  in step with **Lighting** (placeholder primitives have no normal maps — favour an
-  overlay/render-texture lighting approach over Phaser's Light2D pipeline).
+      dependents: it supplies the **Portraits** the Dialogue system needs, and it should land
+      in step with **Lighting** (placeholder primitives have no normal maps — favour an
+      overlay/render-texture lighting approach over Phaser's Light2D pipeline).
 - [ ] **Dialogue boxes** — a framed text box at the bottom of the screen with a
-  **portrait** of the speaker. Purely a **presentation layer** — no interactive NPC
-  entity enters scope; the "speaker" is whatever name/portrait the script supplies
-  (cutscene characters, intro narration, the Player). Renders in the parallel `UI` scene
-  (extends ADR 0003's UI-scene role to narrative overlays) and is driven over the event
-  bus (`dialogue-start`/`-advance`/`-end`), never reaching into `Game`. A dialogue
-  invocation has a **mode**: _modal_ (cutscenes/conversations — locks Player control,
-  pauses `Game` simulation) or _ambient_ (the Player's short in-world monologues —
-  gameplay keeps running). Both step via a **dedicated advance key** so ambient lines
-  don't collide with move/attack. A script is an ordered list of lines, each with speaker,
-  portrait id, and text.
+      **portrait** of the speaker. Purely a **presentation layer** — no interactive NPC
+      entity enters scope; the "speaker" is whatever name/portrait the script supplies
+      (cutscene characters, intro narration, the Player). Renders in the parallel `UI` scene
+      (extends ADR 0003's UI-scene role to narrative overlays) and is driven over the event
+      bus (`dialogue-start`/`-advance`/`-end`), never reaching into `Game`. A dialogue
+      invocation has a **mode**: _modal_ (cutscenes/conversations — locks Player control,
+      pauses `Game` simulation) or _ambient_ (the Player's short in-world monologues —
+      gameplay keeps running). Both step via a **dedicated advance key** so ambient lines
+      don't collide with move/attack. A script is an ordered list of lines, each with speaker,
+      portrait id, and text.
 - [ ] **Cutscenes** — a scripted, Player-locked timeline run in-world over the `Game`
-  scene by a **lean director** with a bounded verb set: show modal Dialogue, pan/focus
-  the camera, move/spawn an entity, wait, and fire a state event (e.g. open a Door). Fired
-  by game events or map-authored **trigger regions** (reusing the door-trigger machinery,
-  ADR 0005); each fires **once**, with "seen" recorded in `GameState.progress` (ADR 0003)
-  so it survives Room teardown and the respawn-to-entrance loop and never replays.
-  **Skippable** via a key that jumps to the end and applies the end-state.
+      scene by a **lean director** with a bounded verb set: show modal Dialogue, pan/focus
+      the camera, move/spawn an entity, wait, and fire a state event (e.g. open a Door). Fired
+      by game events or map-authored **trigger regions** (reusing the door-trigger machinery,
+      ADR 0005); each fires **once**, with "seen" recorded in `GameState.progress` (ADR 0003)
+      so it survives Room teardown and the respawn-to-entrance loop and never replays.
+      **Skippable** via a key that jumps to the end and applies the end-state.
 - [ ] **Title screen** — the game's entry scene, inserted in the flow as
-  `Boot → Preload → Title → Game` (ADR 0003). A landscape pans down into a castle with the
-  logo fading in beside it — a **bespoke tween/camera move inside the `Title` scene**, not
-  the in-world cutscene director (the Title has no Player/Room/`GameState`). Minimal
-  "press to start"; no load/options menu (no persistence in the slice). The win flow
-  returns here.
+      `Boot → Preload → Title → Game` (ADR 0003). A landscape pans down into a castle with the
+      logo fading in beside it — a **bespoke tween/camera move inside the `Title` scene**, not
+      the in-world cutscene director (the Title has no Player/Room/`GameState`). Minimal
+      "press to start"; no load/options menu (no persistence in the slice). The win flow
+      returns here.
 - [ ] **Push-Block puzzle** — `Block` + `Switch` (door-opening flavour of the Switch). The
-  Block shoves in grid-aligned steps on the Tiled collision grid (ADR 0005) onto a Switch
-  to open a path. Switch state model (held-while-pressed vs latch-open-permanently)
-  deferred to implementation/level design.
+      Block shoves in grid-aligned steps on the Tiled collision grid (ADR 0005) onto a Switch
+      to open a path. Switch state model (held-while-pressed vs latch-open-permanently)
+      deferred to implementation/level design.
+
+## Known bugs
+
+- **Dead Charger persists** — a Charger killed during its committed wind-up/lunge is not torn
+  down: the sprite stays on screen with no health, collision, or movement, looping its wind-up
+  pulse forever. Likely `die()` racing the committed-state timeline (the FSM keeps ticking the
+  wind-up tween/lane during the death tween, or `onDeath` not firing mid-commit).
 
 ## Backlog / deferred ideas
 

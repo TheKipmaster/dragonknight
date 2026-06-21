@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { TEX, TILE, TILESET_NAME } from '../config/constants';
 import type { DoorTrigger, ItemSpawn, Room } from './Room';
+import type { NavGrid } from '../components/FlowField';
 
 /**
  * A Room backed by a Tiled map (ADR 0001).
@@ -138,6 +139,24 @@ export class TiledRoom implements Room {
   isSolidAt(x: number, y: number): boolean {
     const tile = this.wallLayer?.getTileAtWorldXY(x, y);
     return tile != null && tile.index !== -1;
+  }
+
+  buildNavGrid(): NavGrid {
+    const map = this.map;
+    const walls = this.wallLayer;
+    if (!map || !walls) throw new Error(`Room ${this.id}: buildNavGrid() before activate()`);
+
+    const cols = map.width;
+    const rows = map.height;
+    const solid: boolean[] = new Array(cols * rows);
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        // Mirror activate()'s rule: any non-empty walls tile is solid (empty = -1/null).
+        const tile = walls.getTileAt(col, row);
+        solid[row * cols + col] = tile != null && tile.index !== -1;
+      }
+    }
+    return { cols, rows, tile: TILE, solid };
   }
 
   deactivate(): void {

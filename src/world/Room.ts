@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { NavGrid } from '../components/FlowField';
 
 /**
  * A door trigger: an overlap zone that, when the Player enters it, transitions
@@ -75,4 +76,12 @@ export interface Room {
 
   /** Is the given world-pixel point inside a solid tile? */
   isSolidAt(x: number, y: number): boolean;
+
+  /**
+   * Snapshot this Room's solid geometry as a grid for pathfinding (ADR 0005:
+   * geometry grows the interface a method at a time). The Room produces the
+   * grid rather than exposing its TilemapLayer, keeping the representation
+   * private. Walls are static, so callers build this once per activation.
+   */
+  buildNavGrid(): NavGrid;
 }
