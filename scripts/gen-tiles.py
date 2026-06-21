@@ -268,11 +268,13 @@ def carve(w, h, inside, seed):
     return floor, walls, inside_grid
 
 
-def edge_on_axis(inside, cx, cy, dx, dy, w, h):
-    """Walk from the centre outward along (dx, dy); return the first edge cell —
-    where a door is punched through the curved wall."""
+def edge_on_axis(grid, cx, cy, dx, dy, w, h):
+    """Walk from the centre outward along (dx, dy) over the *smoothed* inside grid;
+    return the first edge cell — the wall that a door is punched through. Must use
+    the smoothed grid (not the raw shape) so the opening lands on the real wall:
+    smoothing erodes the equator tip, pulling the boundary in by a cell."""
     x, y = int(cx), int(cy)
-    while 0 <= x + dx < w and 0 <= y + dy < h and inside(x + dx, y + dy):
+    while 0 <= x + dx < w and 0 <= y + dy < h and grid[y + dy][x + dx]:
         x, y = x + dx, y + dy
     return x + dx, y + dy
 
@@ -299,8 +301,8 @@ def build_maps():
     inside = superellipse(cx=w / 2, cy=h / 2, rx=w / 2 - 1.5, ry=h / 2 - 1.5, exponent=4)
     floor, walls, grid = carve(w, h, inside, seed=1)
     cx, cy = w // 2, h // 2
-    east_door = edge_on_axis(inside, cx, cy, 1, 0, w, h)
-    west_door = edge_on_axis(inside, cx, cy, -1, 0, w, h)
+    east_door = edge_on_axis(grid, cx, cy, 1, 0, w, h)
+    west_door = edge_on_axis(grid, cx, cy, -1, 0, w, h)
     open_door(floor, walls, w, east_door)
     open_door(floor, walls, w, west_door)
     for (px, py) in [(7, 6), (8, 6), (13, 8), (14, 8)]:   # a couple of pillars
@@ -321,7 +323,7 @@ def build_maps():
     inside = superellipse(cx=w / 2, cy=h / 2, rx=w / 2 - 1.5, ry=h / 2 - 1.5, exponent=2.5)
     floor, walls, grid = carve(w, h, inside, seed=2)
     cx, cy = w // 2, h // 2
-    west_door = edge_on_axis(inside, cx, cy, -1, 0, w, h)
+    west_door = edge_on_axis(grid, cx, cy, -1, 0, w, h)
     open_door(floor, walls, w, west_door)
     for (px, py) in [(cx, cy), (cx - 6, cy - 4), (cx + 6, cy - 4),
                      (cx - 6, cy + 4), (cx + 6, cy + 4)]:  # a ring of pillars
@@ -344,7 +346,7 @@ def build_maps():
                      (14, 14), (15, 14), (14, 15), (15, 15)]:
         pillar(floor, walls, grid, w, px, py)
     cx, cy = w // 2, h // 2
-    east_door = edge_on_axis(inside, cx, cy, 1, 0, w, h)
+    east_door = edge_on_axis(grid, cx, cy, 1, 0, w, h)
     open_door(floor, walls, w, east_door)
     objects = [
         # Spawn dead-centre, matching the old PlaceholderRoom's (widthPx/2, heightPx/2).
