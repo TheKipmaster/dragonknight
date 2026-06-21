@@ -18,7 +18,10 @@ export interface PlayerState {
 
 export interface DungeonProgress {
   keysHeld: number;
+  /** lockIds of Doors already unlocked — they stay open and never re-charge. */
   doorsOpened: Set<string>;
+  /** Persistent ids of one-shot items already collected — they don't respawn. */
+  itemsTaken: Set<string>;
 }
 
 export const GameState = {
@@ -32,6 +35,7 @@ export const GameState = {
   progress: {
     keysHeld: 0,
     doorsOpened: new Set<string>(),
+    itemsTaken: new Set<string>(),
   } as DungeonProgress,
 };
 

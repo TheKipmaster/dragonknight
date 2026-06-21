@@ -12,4 +12,6 @@ export const GameEvent = {
   PlayerDied: 'player-died',
   RoomChanged: 'room-changed',
   ItemPickedUp: 'item-picked-up',
+  /** Keys held changed (picked up or spent on a locked Door) — the HUD redraws. */
+  KeysChanged: 'keys-changed',
 } as const;

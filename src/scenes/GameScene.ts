@@ -3,6 +3,7 @@ import { Player } from '../entities/Player';
 import { PracticeDummy } from '../entities/PracticeDummy';
 import { Walker } from '../entities/Walker';
 import { Charger } from '../entities/Charger';
+import { Key } from '../entities/Key';
 import { RoomManager } from '../world/RoomManager';
 import { Switch } from '../world/Switch';
 import type { Room } from '../world/Room';
@@ -27,6 +28,7 @@ export class GameScene extends Phaser.Scene {
   private attackables!: Phaser.GameObjects.Group;
   private hostiles!: Phaser.GameObjects.Group;
   private solids!: Phaser.GameObjects.Group;
+  private pickups!: Phaser.GameObjects.Group;
 
   private spawnSwitch?: Switch;
   private switchOverlap?: Phaser.Physics.Arcade.Collider;
@@ -39,6 +41,7 @@ export class GameScene extends Phaser.Scene {
     this.attackables = this.add.group();
     this.hostiles = this.add.group();
     this.solids = this.add.group();
+    this.pickups = this.add.group();
 
     // The Player is the through-line across Rooms: created once, repositioned by
     // the manager on each transition.
@@ -53,6 +56,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.solids);
     this.physics.add.collider(this.hostiles, this.solids);
     this.physics.add.overlap(this.player, this.hostiles, this.onContact, undefined, this);
+    this.physics.add.overlap(this.player, this.pickups, this.onPickup, undefined, this);
 
     this.manager = new RoomManager(this, this.player, {
       onEnter: (room) => this.populate(room),
@@ -74,6 +78,14 @@ export class GameScene extends Phaser.Scene {
   private populate(room: Room): void {
     room.addColliders(this.player);
     room.addColliders(this.hostiles);
+
+    // Spawn map-authored items, skipping any already collected (they don't respawn).
+    for (const item of room.items) {
+      if (item.kind === 'key' && !GameState.progress.itemsTaken.has(item.id)) {
+        this.pickups.add(new Key(this, item.x, item.y, item.id));
+      }
+    }
+
     // For now only the debug Room carries the practice rig; the others are bare
     // walkable Rooms. (Future: Rooms author their own entity placement.)
     if (room.id === 'room-debug') this.buildPracticeRig(room);
@@ -86,6 +98,7 @@ export class GameScene extends Phaser.Scene {
     this.attackables.clear(true, true);
     this.hostiles.clear(true, true);
     this.solids.clear(true, true);
+    this.pickups.clear(true, true);
     this.switchOverlap?.destroy();
     this.switchOverlap = undefined;
     this.spawnSwitch?.destroy();
@@ -121,6 +134,16 @@ export class GameScene extends Phaser.Scene {
   /** Enemy touched the Player: route contact damage through the Attack chokepoint. */
   private onContact: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, enemy) => {
     if (isContactAttacker(enemy)) this.player.hit(enemy.contactAttack());
+  };
+
+  /** Player touched a pickup: collect it and record it as taken (no respawn). */
+  private onPickup: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, obj) => {
+    if (obj instanceof Key) {
+      GameState.progress.keysHeld++;
+      GameState.progress.itemsTaken.add(obj.itemId);
+      eventBus.emit(GameEvent.KeysChanged);
+      obj.destroy();
+    }
   };
 
   /** Spawn one Walker at a wall-free point in a ring around the Player. */

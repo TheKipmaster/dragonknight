@@ -27,6 +27,7 @@ export const TEX = {
   dummy: 'dummy',
   walker: 'walker',
   charger: 'charger',
+  key: 'key',
   tiles: 'tiles-stone', // shared dungeon tileset image (public/tiles/stone.png)
 } as const;
 

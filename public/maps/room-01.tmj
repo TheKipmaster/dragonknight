@@ -747,6 +747,16 @@
        "name": "targetSpawn",
        "type": "string",
        "value": "from-west"
+      },
+      {
+       "name": "locked",
+       "type": "bool",
+       "value": true
+      },
+      {
+       "name": "lockId",
+       "type": "string",
+       "value": "gate-1"
       }
      ]
     },
@@ -772,10 +782,22 @@
        "value": "from-room01"
       }
      ]
+    },
+    {
+     "id": 6,
+     "name": "key",
+     "type": "item",
+     "point": true,
+     "x": 168.0,
+     "y": 72.0,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true
     }
    ]
   }
  ],
  "nextlayerid": 4,
- "nextobjectid": 6
+ "nextobjectid": 7
 }

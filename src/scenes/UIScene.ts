@@ -10,6 +10,8 @@ import { eventBus, GameEvent } from '../state/eventBus';
  */
 export class UIScene extends Phaser.Scene {
   private hearts: Phaser.GameObjects.Image[] = [];
+  private keyIcon?: Phaser.GameObjects.Image;
+  private keyLabel?: Phaser.GameObjects.Text;
 
   constructor() {
     super('UI');
@@ -17,10 +19,29 @@ export class UIScene extends Phaser.Scene {
 
   create(): void {
     this.drawHearts();
+    this.drawKeys();
     eventBus.on(GameEvent.PlayerDamaged, this.drawHearts, this);
+    eventBus.on(GameEvent.KeysChanged, this.drawKeys, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       eventBus.off(GameEvent.PlayerDamaged, this.drawHearts, this);
+      eventBus.off(GameEvent.KeysChanged, this.drawKeys, this);
     });
+  }
+
+  /** Show a key icon + count below the Hearts while any Keys are held. */
+  private drawKeys(): void {
+    this.keyIcon?.destroy();
+    this.keyLabel?.destroy();
+    this.keyIcon = undefined;
+    this.keyLabel = undefined;
+
+    const n = GameState.progress.keysHeld;
+    if (n <= 0) return;
+
+    this.keyIcon = this.add.image(8, 24, TEX.key).setOrigin(0, 0);
+    this.keyLabel = this.add
+      .text(22, 24, `x${n}`, { fontFamily: 'monospace', fontSize: '10px', color: '#ffd34d' })
+      .setOrigin(0, 0);
   }
 
   /** Render one icon per full Heart slot; full / half / empty per current health. */

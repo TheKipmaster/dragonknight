@@ -1519,6 +1519,16 @@
        "name": "targetSpawn",
        "type": "string",
        "value": "from-east"
+      },
+      {
+       "name": "locked",
+       "type": "bool",
+       "value": true
+      },
+      {
+       "name": "lockId",
+       "type": "string",
+       "value": "gate-1"
       }
      ]
     }

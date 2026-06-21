@@ -51,10 +51,10 @@ inventory UI · more than two enemy types · pathfinding · gamepad input.
 - [x] Spawner `Switch` (spawns Walkers while stood on; colour change)
 - [x] Headless smoke test (boot + behavioural assertion)
 - [x] **Tiled Room(s) + Door transitions** — replace the placeholder Room; exercise the Room lifecycle (ADR 0001) for real (collision contract + RoomManager: ADR 0005)
+- [x] **Key + locked Door** — the progression gate (map-authored lock/key; persistent in `GameState.progress`)
 
 ### Remaining for the MVP
 
-- [ ] **Key + locked Door** — the progression gate
 - [ ] **Push-Block puzzle** — `Block` + `Switch` (door-opening flavour of the Switch)
 - [ ] **Treasure + win state** — final Room goal
 - [ ] **Art pass** — revisit placeholder primitives once the feel is proven

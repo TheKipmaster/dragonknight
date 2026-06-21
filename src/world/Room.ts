@@ -4,11 +4,25 @@ import Phaser from 'phaser';
  * A door trigger: an overlap zone that, when the Player enters it, transitions
  * to `targetRoom` and places them at that room's `targetSpawn` (ADR 0001). The
  * zone is owned by the Room and destroyed on deactivate().
+ *
+ * A locked door carries a `lockId`; it only transitions once that lock is in
+ * GameState.progress.doorsOpened (opened by spending a Key). Doors on both sides
+ * of a doorway share a lockId, so opening it from one side opens it from both.
  */
 export interface DoorTrigger {
   readonly zone: Phaser.GameObjects.Zone;
   readonly targetRoom: string;
   readonly targetSpawn: string;
+  readonly lockId?: string;
+}
+
+/** A one-shot item to spawn when the Room activates (e.g. a Key). */
+export interface ItemSpawn {
+  /** Persistent id (`roomId#objectId`) so a collected item never respawns. */
+  readonly id: string;
+  readonly kind: string;
+  readonly x: number;
+  readonly y: number;
 }
 
 /**
@@ -31,6 +45,9 @@ export interface Room {
 
   /** Door triggers parsed from the map's object layer; valid while active. */
   readonly doors: readonly DoorTrigger[];
+
+  /** Item spawns parsed from the map's object layer (e.g. Keys). */
+  readonly items: readonly ItemSpawn[];
 
   /** Look up a named spawn marker (e.g. a door's targetSpawn). */
   spawnAt(name: string): Phaser.Math.Vector2 | undefined;

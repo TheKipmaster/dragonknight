@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { TEX, TILE, TILESET_NAME } from '../config/constants';
-import type { DoorTrigger, Room } from './Room';
+import type { DoorTrigger, ItemSpawn, Room } from './Room';
 
 /**
  * A Room backed by a Tiled map (ADR 0001).
@@ -27,6 +27,7 @@ export class TiledRoom implements Room {
   readonly spawns = new Map<string, Phaser.Math.Vector2>();
 
   readonly doors: DoorTrigger[] = [];
+  readonly items: ItemSpawn[] = [];
 
   private map?: Phaser.Tilemaps.Tilemap;
   private layers: Phaser.Tilemaps.TilemapLayer[] = [];
@@ -79,30 +80,36 @@ export class TiledRoom implements Room {
   }
 
   /**
-   * Read the `objects` layer: named point objects become spawn markers (`start`
-   * is the default), and `door` rectangles become overlap zones carrying where
-   * they lead. Doors are invisible Zones — visual-free trigger volumes.
+   * Read the `objects` layer: `door` rectangles become overlap zones carrying
+   * where they lead (and an optional lockId); `key` points become item spawns;
+   * other named points become spawn markers (`start` is the default).
    */
   private readObjects(map: Phaser.Tilemaps.Tilemap): void {
     this.spawns.clear();
     this.doors.length = 0;
+    this.items.length = 0;
     const objects = map.getObjectLayer('objects')?.objects ?? [];
 
     for (const obj of objects) {
       const x = obj.x ?? 0;
       const y = obj.y ?? 0;
-      if (obj.point && obj.name) {
-        this.spawns.set(obj.name, new Phaser.Math.Vector2(x, y));
-      } else if (obj.name === 'door') {
+      if (obj.name === 'door') {
         const props = this.props(obj);
-        const targetRoom = props.targetRoom;
-        const targetSpawn = props.targetSpawn;
-        if (!targetRoom || !targetSpawn) continue;
+        if (!props.targetRoom || !props.targetSpawn) continue;
         const w = obj.width || TILE;
         const h = obj.height || TILE;
         const zone = this.scene.add.zone(x + w / 2, y + h / 2, w, h);
         this.scene.physics.add.existing(zone, true); // static body for overlap
-        this.doors.push({ zone, targetRoom, targetSpawn });
+        this.doors.push({
+          zone,
+          targetRoom: props.targetRoom,
+          targetSpawn: props.targetSpawn,
+          lockId: props.locked === 'true' ? props.lockId : undefined,
+        });
+      } else if (obj.point && obj.name === 'key') {
+        this.items.push({ id: `${this.id}#${obj.id}`, kind: 'key', x, y });
+      } else if (obj.point && obj.name) {
+        this.spawns.set(obj.name, new Phaser.Math.Vector2(x, y));
       }
     }
 
@@ -138,6 +145,7 @@ export class TiledRoom implements Room {
     this.colliders.length = 0;
     for (const door of this.doors) door.zone.destroy();
     this.doors.length = 0;
+    this.items.length = 0;
     for (const layer of this.layers) layer.destroy();
     this.layers = [];
     this.wallLayer = undefined;

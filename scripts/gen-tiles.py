@@ -168,16 +168,31 @@ def point(obj_id, name, tx, ty):
     }
 
 
-def door(obj_id, tx, ty, target_room, target_spawn):
-    """A door trigger: a one-tile rectangle carrying where it leads (ADR 0001)."""
+def door(obj_id, tx, ty, target_room, target_spawn, lock_id=None):
+    """A door trigger: a one-tile rectangle carrying where it leads (ADR 0001).
+    Pass `lock_id` to make it a locked door — both sides of a doorway should share
+    one lockId so opening it from either side opens it for good (ADR 0005)."""
+    props = [
+        {"name": "targetRoom", "type": "string", "value": target_room},
+        {"name": "targetSpawn", "type": "string", "value": target_spawn},
+    ]
+    if lock_id:
+        props.append({"name": "locked", "type": "bool", "value": True})
+        props.append({"name": "lockId", "type": "string", "value": lock_id})
     return {
         "id": obj_id, "name": "door", "type": "door",
         "x": tx * TILE, "y": ty * TILE, "width": TILE, "height": TILE,
         "rotation": 0, "visible": True,
-        "properties": [
-            {"name": "targetRoom", "type": "string", "value": target_room},
-            {"name": "targetSpawn", "type": "string", "value": target_spawn},
-        ],
+        "properties": props,
+    }
+
+
+def key_item(obj_id, tx, ty):
+    """A Key pickup: a point object at the CENTRE of tile (tx,ty)."""
+    return {
+        "id": obj_id, "name": "key", "type": "item", "point": True,
+        "x": tx * TILE + TILE / 2, "y": ty * TILE + TILE / 2,
+        "width": 0, "height": 0, "rotation": 0, "visible": True,
     }
 
 
@@ -312,8 +327,10 @@ def build_maps():
         point(1, "start", 4, cy),                        # new-game start
         point(2, "from-east", east_door[0] - 2, cy),     # arrival from the east door
         point(3, "from-debug", west_door[0] + 2, cy),    # arrival from the debug room
-        door(4, east_door[0], east_door[1], "room-02", "from-west"),
+        # East door to room-02 is the locked gate; the Key to open it is in here.
+        door(4, east_door[0], east_door[1], "room-02", "from-west", lock_id="gate-1"),
         door(5, west_door[0], west_door[1], "room-debug", "from-room01"),
+        key_item(6, 10, 4),
     ]
     (MAPS_DIR / "room-01.tmj").write_text(json.dumps(make_map(w, h, floor, walls, objects), indent=1))
     print(f"wrote {MAPS_DIR/'room-01.tmj'} ({w}x{h}, round-ish)")
@@ -330,7 +347,8 @@ def build_maps():
         pillar(floor, walls, grid, w, px, py)
     objects = [
         point(1, "from-west", west_door[0] + 2, cy),
-        door(2, west_door[0], west_door[1], "room-01", "from-east"),
+        # Same gate as room-01's east door; opening it from either side opens both.
+        door(2, west_door[0], west_door[1], "room-01", "from-east", lock_id="gate-1"),
     ]
     (MAPS_DIR / "room-02.tmj").write_text(json.dumps(make_map(w, h, floor, walls, objects), indent=1))
     print(f"wrote {MAPS_DIR/'room-02.tmj'} ({w}x{h}, round)")

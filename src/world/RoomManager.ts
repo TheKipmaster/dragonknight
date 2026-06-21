@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { TiledRoom } from './TiledRoom';
-import type { Room } from './Room';
+import type { DoorTrigger, Room } from './Room';
 import type { Player } from '../entities/Player';
 import { GameState } from '../state/GameState';
 import { eventBus, GameEvent } from '../state/eventBus';
@@ -29,6 +29,8 @@ export class RoomManager {
   private transitioning = false;
   /** Door overlaps for the active Room; destroyed and rebuilt each transition. */
   private doorOverlaps: Phaser.Physics.Arcade.Collider[] = [];
+  /** Throttle for the "locked" cue (overlap fires every frame while touching). */
+  private lastDeniedAt = Number.NEGATIVE_INFINITY;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -81,12 +83,50 @@ export class RoomManager {
 
     for (const door of room.doors) {
       this.doorOverlaps.push(
-        this.scene.physics.add.overlap(this.player, door.zone, () =>
-          this.goTo(door.targetRoom, door.targetSpawn),
-        ),
+        this.scene.physics.add.overlap(this.player, door.zone, () => this.enterDoor(door)),
       );
     }
     return room;
+  }
+
+  /** Decide whether a door opens: a locked door needs its lock opened, which
+   *  costs one Key (and stays open thereafter); otherwise it just transitions. */
+  private enterDoor(door: DoorTrigger): void {
+    if (this.transitioning) return;
+
+    if (door.lockId && !GameState.progress.doorsOpened.has(door.lockId)) {
+      if (GameState.progress.keysHeld <= 0) {
+        this.denied();
+        return;
+      }
+      GameState.progress.keysHeld--;
+      GameState.progress.doorsOpened.add(door.lockId);
+      eventBus.emit(GameEvent.KeysChanged);
+    }
+    this.goTo(door.targetRoom, door.targetSpawn);
+  }
+
+  /** A throttled "locked" cue floated above the Player. */
+  private denied(): void {
+    const now = this.scene.time.now;
+    if (now - this.lastDeniedAt < 900) return;
+    this.lastDeniedAt = now;
+    const label = this.scene.add
+      .text(this.player.x, this.player.y - 14, 'locked', {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: '#ff6b6b',
+      })
+      .setOrigin(0.5)
+      .setDepth(20);
+    this.scene.tweens.add({
+      targets: label,
+      y: label.y - 10,
+      alpha: 0,
+      duration: 600,
+      ease: 'Cubic.out',
+      onComplete: () => label.destroy(),
+    });
   }
 
   private teardownDoors(): void {
