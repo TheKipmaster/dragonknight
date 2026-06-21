@@ -192,6 +192,15 @@ export class Charger
     });
   }
 
+  /** The telegraph `lane` is a standalone scene Graphics, not a child of the
+   *  sprite, so it must be destroyed explicitly — otherwise it leaks across Room
+   *  transitions when the Charger is destroyed via group.clear() (which bypasses
+   *  die()). Idempotent with die()'s own lane teardown. */
+  destroy(fromScene?: boolean): void {
+    this.lane.destroy();
+    super.destroy(fromScene);
+  }
+
   private die(): void {
     this.setVelocity(0, 0);
     this.lane.destroy();

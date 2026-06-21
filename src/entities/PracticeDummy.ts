@@ -105,6 +105,15 @@ export class PracticeDummy extends Phaser.Physics.Arcade.Sprite implements Damag
     this.barFill.width = PracticeDummy.BAR_WIDTH * this.health.fraction;
   }
 
+  /** The health bar is built from standalone scene objects (not children of the
+   *  sprite), so they must be torn down explicitly — otherwise they leak across
+   *  Room transitions when the dummy is destroyed via group.clear(). */
+  destroy(fromScene?: boolean): void {
+    this.barBg.destroy();
+    this.barFill.destroy();
+    super.destroy(fromScene);
+  }
+
   /** Practice dummy never truly dies — it refills after a beat. */
   private onDepleted(): void {
     this.setTintFill(0xff4d6d);
