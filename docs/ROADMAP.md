@@ -1,7 +1,7 @@
 # Roadmap
 
-The MVP goal, current status, and backlog. Architectural *decisions* live in
-[`docs/adr/`](./adr); domain *terms* live in [`CONTEXT.md`](../CONTEXT.md). This
+The MVP goal, current status, and backlog. Architectural _decisions_ live in
+[`docs/adr/`](./adr); domain _terms_ live in [`CONTEXT.md`](../CONTEXT.md). This
 file is the "what we're building and what's left" — keep it current as work lands.
 
 _Status as of 2026-06-19._
@@ -14,12 +14,14 @@ once and nothing more. It must prove the whole loop end to end, not be content-c
 ### The slice
 
 **Player can:**
+
 - Move 8-directionally (keyboard), aim and attack with the mouse (free 360°)
 - Swing the sword (3-beat combo), deal damage + knockback
 - Take damage, lose Hearts, get i-frames + knockback
 - Die → respawn at the Dungeon entrance with full Hearts (no save)
 
 **The Dungeon has:**
+
 - ~4–5 Rooms connected by Doors with fade transitions
 - Two enemy types: a contact wanderer **and** a telegraphed attacker
 - One locked Door + one Key — the core progression gate
@@ -36,6 +38,7 @@ inventory UI · more than two enemy types · pathfinding · gamepad input.
 ## Status
 
 ### Done
+
 - [x] Scaffold: Phaser 3 + TypeScript + Vite; Boot/Preload/Game/UI scenes
 - [x] Placeholder Room with camera scroll + walls; Room lifecycle seam (ADR 0001)
 - [x] Player movement (8-way), mouse-aimed sword, 3-beat combo (2/3/5 damage)
@@ -47,9 +50,10 @@ inventory UI · more than two enemy types · pathfinding · gamepad input.
 - [x] Telegraphed enemy: `Charger` (committed wind-up → lunge) on the `AIController` FSM; reusable `inactive`/aggro state both enemies share
 - [x] Spawner `Switch` (spawns Walkers while stood on; colour change)
 - [x] Headless smoke test (boot + behavioural assertion)
+- [x] **Tiled Room(s) + Door transitions** — replace the placeholder Room; exercise the Room lifecycle (ADR 0001) for real (collision contract + RoomManager: ADR 0005)
 
 ### Remaining for the MVP
-- [ ] **Tiled Room(s) + Door transitions** — replace the placeholder Room; exercise the Room lifecycle (ADR 0001) for real
+
 - [ ] **Key + locked Door** — the progression gate
 - [ ] **Push-Block puzzle** — `Block` + `Switch` (door-opening flavour of the Switch)
 - [ ] **Treasure + win state** — final Room goal
@@ -62,7 +66,7 @@ Things raised during the build and consciously deferred — not forgotten.
 - **Fuller smoke assertions** — drive the actual sword swing via input; assert contact damage drops a Heart; assert the combo deals 2→3→5; assert respawn refills Hearts.
 - **Per-beat combo differentiation** — currently only damage scales; could give the finisher a bigger/heavier hitbox.
 - **Adjacent-Room preloading** — the ADR 0001 optimisation; only needed for a larger/streaming world.
-- **Smarter enemies** — A* pathfinding and line-of-sight (naive seek for now).
+- **Smarter enemies** — A\* pathfinding and line-of-sight (naive seek for now).
 - **Refactor `Health` to an injectable store** — only if a third persistent-health entity appears (today the Player keeps Hearts in `GameState`; see Player class comment).
 - **Gamepad input** — keyboard + mouse only for the MVP, behind an input-mapping indirection later.
 - **Split the `Switch` term** — if the "spawner trap vs progression trigger" overload starts to chafe, introduce a distinct `Trap`/`Spawner` concept.
