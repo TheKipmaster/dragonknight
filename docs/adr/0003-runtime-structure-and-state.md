@@ -2,7 +2,9 @@
 
 ## Status
 
-accepted
+accepted (scene list amended by ADR 0006: a `Title` entry scene is added —
+`Boot → Preload → Title → Game (+UI)` — the `UI` scene's remit widens to narrative
+overlays, and `Game` becomes pausable by a modal presentation)
 
 ## Decision
 

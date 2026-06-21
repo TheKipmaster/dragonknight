@@ -54,3 +54,25 @@ _Avoid_: Boulder, Crate, Box.
 **Treasure**:
 The goal reward in the Dungeon's final Room. Reaching it completes the MVP Dungeon (the win state). Stands in for a boss in the MVP.
 _Avoid_: Loot, Chest, Reward (a Chest would be the *container*; the Treasure is the goal itself).
+
+## Presentation & Atmosphere
+
+**Light source**:
+A thing that emits a radial gradient of light into a Room. Atmospheric only — it sets mood and never gates what the Player can see (no fog-of-war). Owned either by a static map fixture (a torch) or by an entity (the Player's aura, the glowing Treasure). A Room has an authored ambient darkness level that light sources push back against.
+_Avoid_: Lamp, Glow, Torch (a torch is one *kind* of light source, not the concept).
+
+**Dialogue box**:
+A framed text box at the bottom of the screen showing one speaker's line, with their Portrait. A presentation layer only — it never implies an interactive NPC; the speaker is whoever the script names. Shown either _modal_ (locks the Player and pauses the world — used by Cutscenes and conversations) or _ambient_ (the Player's short in-world line while play continues). Advanced by a dedicated key in both modes.
+_Avoid_: Textbox, Speech bubble, Message (a speech bubble would float over a speaker in-world; the Dialogue box is anchored to the screen).
+
+**Portrait**:
+The bust image of a speaker shown beside their Dialogue box, identifying who is talking. Keyed by speaker; not every line needs one.
+_Avoid_: Avatar, Face, Headshot.
+
+**Cutscene**:
+A scripted story beat that takes control from the Player and plays out a fixed timeline — modal Dialogue plus camera moves and entity choreography — then hands control back. Plays in-world (over the active Room), fires once, and is skippable.
+_Avoid_: Cinematic, Scene (a "Scene" is the Phaser runtime unit; a Cutscene is content, not a Scene).
+
+**Title screen**:
+The game's entry point, shown before the Dungeon — branding plus a "press to start" affordance, and where the win flow returns. Has no Player, Room, or progress; its animated intro is self-contained, not a Cutscene.
+_Avoid_: Main menu, Start screen, Splash (no multi-option menu in the MVP).
