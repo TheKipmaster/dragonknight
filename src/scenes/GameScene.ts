@@ -25,6 +25,7 @@ export class GameScene extends Phaser.Scene {
   private player!: Player;
   private attackables!: Phaser.GameObjects.Group;
   private hostiles!: Phaser.GameObjects.Group;
+  private solids!: Phaser.GameObjects.Group;
   private spawnSwitch!: Switch;
 
   constructor() {
@@ -37,11 +38,18 @@ export class GameScene extends Phaser.Scene {
 
     this.attackables = this.add.group();
     this.hostiles = this.add.group();
+    // Solid, non-hostile props: blocked like walls, never deal contact damage.
+    this.solids = this.add.group();
 
     const { x, y } = this.room.spawn;
-    // Practice dummies flanking the spawn (sword targets, never hostile).
-    this.attackables.add(new PracticeDummy(this, x - 40, y));
-    this.attackables.add(new PracticeDummy(this, x + 40, y));
+    // Practice dummies flanking the spawn (sword targets, never hostile, but
+    // solid — they're in `attackables` so the sword hits them and in `solids`
+    // so the Player and enemies can't walk through them).
+    for (const dx of [-40, 40]) {
+      const dummy = new PracticeDummy(this, x + dx, y);
+      this.attackables.add(dummy);
+      this.solids.add(dummy);
+    }
 
     this.player = new Player(this, x, y);
     this.player.setDepth(1);
@@ -62,6 +70,8 @@ export class GameScene extends Phaser.Scene {
     this.room.addColliders(this.player);
     this.room.addColliders(this.hostiles);
     this.physics.add.collider(this.hostiles, this.hostiles);
+    this.physics.add.collider(this.player, this.solids);
+    this.physics.add.collider(this.hostiles, this.solids);
 
     this.physics.add.overlap(this.player, this.hostiles, this.onContact, undefined, this);
     this.physics.add.overlap(this.player, this.spawnSwitch.zone, () =>
