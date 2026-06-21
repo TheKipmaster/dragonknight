@@ -5,6 +5,11 @@ tmp/
 .DS_Store
 PROMPT.md
 
+# Regenerable dev aids from scripts/gen-tiles.py + scripts/preview-maps.py
+# (the game loads stone.png and the .tmj files; these are just for eyeballing)
+public/maps/*.preview.png
+public/tiles/*.x8.png
+
 # Local Claude config/state
 .claude/
 

@@ -3,7 +3,7 @@ import { Player } from '../entities/Player';
 import { PracticeDummy } from '../entities/PracticeDummy';
 import { Walker } from '../entities/Walker';
 import { Charger } from '../entities/Charger';
-import { PlaceholderRoom } from '../world/PlaceholderRoom';
+import { TiledRoom } from '../world/TiledRoom';
 import { Switch } from '../world/Switch';
 import type { Room } from '../world/Room';
 import { GameState } from '../state/GameState';
@@ -32,7 +32,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.room = new PlaceholderRoom(this, GameState.activeRoomId);
+    this.room = new TiledRoom(this, GameState.activeRoomId);
     this.room.activate();
 
     this.attackables = this.add.group();
@@ -59,8 +59,8 @@ export class GameScene extends Phaser.Scene {
       this.spawnWalker(),
     );
 
-    this.physics.add.collider(this.player, this.room.walls);
-    this.physics.add.collider(this.hostiles, this.room.walls);
+    this.room.addColliders(this.player);
+    this.room.addColliders(this.hostiles);
     this.physics.add.collider(this.hostiles, this.hostiles);
 
     this.physics.add.overlap(this.player, this.hostiles, this.onContact, undefined, this);
@@ -94,7 +94,7 @@ export class GameScene extends Phaser.Scene {
       const dist = Phaser.Math.Between(SPAWNER.minRadius, SPAWNER.maxRadius);
       const x = Phaser.Math.Clamp(px + Math.cos(angle) * dist, TILE * 1.5, this.room.widthPx - TILE * 1.5);
       const y = Phaser.Math.Clamp(py + Math.sin(angle) * dist, TILE * 1.5, this.room.heightPx - TILE * 1.5);
-      if (this.overlapsWall(x, y)) continue;
+      if (this.room.isSolidAt(x, y)) continue;
 
       const walker = new Walker(this, x, y, this.player);
       this.attackables.add(walker);
@@ -102,13 +102,6 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     // No wall-free spot found this tick; skip silently.
-  }
-
-  private overlapsWall(x: number, y: number): boolean {
-    return this.room.walls.getChildren().some((child) => {
-      const wall = child as Phaser.Physics.Arcade.Sprite;
-      return Math.abs(wall.x - x) < TILE && Math.abs(wall.y - y) < TILE;
-    });
   }
 
   private onPlayerDied(): void {

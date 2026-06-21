@@ -18,9 +18,6 @@ export interface Room {
   /** Where to place the Player when this Room becomes active. */
   readonly spawn: Phaser.Math.Vector2;
 
-  /** Static collision bodies (walls) for the active Room. */
-  readonly walls: Phaser.Physics.Arcade.StaticGroup;
-
   /** Ensure assets are in memory. No-op in MVP (boot preloads everything). */
   load(): Promise<void>;
 
@@ -32,4 +29,16 @@ export interface Room {
 
   /** Drop this Room's assets from memory. Unused in MVP. */
   destroy(): void;
+
+  /**
+   * Register physics colliders between a dynamic object (or Group) and this
+   * Room's solid geometry. The scene hands its entities *down* to the Room so it
+   * never has to know how collision is represented (a tile layer, a body group,
+   * …) — only that the Room owns the walls. A collider against a Group also
+   * covers members added later, so call once at setup.
+   */
+  addColliders(obj: Phaser.Types.Physics.Arcade.ArcadeColliderType): void;
+
+  /** Is the given world-pixel point inside a solid tile? */
+  isSolidAt(x: number, y: number): boolean;
 }

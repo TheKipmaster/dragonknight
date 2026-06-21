@@ -27,7 +27,11 @@ export const TEX = {
   dummy: 'dummy',
   walker: 'walker',
   charger: 'charger',
+  tiles: 'tiles-stone', // shared dungeon tileset image (public/tiles/stone.png)
 } as const;
+
+/** Tileset name as authored in the Tiled maps; must match `addTilesetImage`. */
+export const TILESET_NAME = 'stone';
 
 /**
  * ── Sword combat tuning ───────────────────────────────────────────────────

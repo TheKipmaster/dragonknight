@@ -1,16 +1,26 @@
 import Phaser from 'phaser';
 import { TILE, TEX } from '../config/constants';
+import { ROOM_IDS } from '../world/rooms';
 
 /**
  * Loads all assets up front (ADR 0001: per-Room data is preloaded at boot).
  *
- * For now there are no real assets — we generate placeholder primitive textures
- * at runtime. Because entities reference logical texture keys (TEX.*), swapping
- * these for a real spritesheet later won't touch gameplay code.
+ * Real assets — the shared tileset image and every Room's tilemap JSON — are
+ * loaded in preload(). Entities still use placeholder primitive textures
+ * generated in create(); because they reference logical keys (TEX.*), swapping
+ * those for a real spritesheet later won't touch gameplay code.
  */
 export class PreloadScene extends Phaser.Scene {
   constructor() {
     super('Preload');
+  }
+
+  preload(): void {
+    // Served from public/ at the site root (see vite defaults).
+    this.load.image(TEX.tiles, 'tiles/stone.png');
+    for (const id of ROOM_IDS) {
+      this.load.tilemapTiledJSON(id, `maps/${id}.tmj`);
+    }
   }
 
   create(): void {
