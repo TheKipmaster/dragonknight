@@ -98,7 +98,7 @@ export const ENEMY = {
 export const CHARGER = {
   maxHp: 30, //          hit points; tanky — three full combos (3×10=30) to fell it
   chaseSpeed: 45, //     stalk speed (px/s); slower than the Walker (55)
-  aggroRange: 95, //    dormant until the Player comes within this distance (px)
+  aggroRange: 160, //    dormant until the Player comes within this distance (px)
   triggerRange: 70, //   distance to the Player that commits a wind-up (px)
   windupMs: 600, //      Telegraph duration — the Player's reaction window (ms)
   lungeSpeed: 260, //    dash speed during the strike (px/s)
