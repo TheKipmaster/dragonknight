@@ -14,4 +14,6 @@ export const GameEvent = {
   ItemPickedUp: 'item-picked-up',
   /** Keys held changed (picked up or spent on a locked Door) — the HUD redraws. */
   KeysChanged: 'keys-changed',
+  /** An enemy died at a point — GameScene drops a floor splat. Payload: {x, y}. */
+  EnemyDied: 'enemy-died',
 } as const;

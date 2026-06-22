@@ -6,6 +6,7 @@ import { AIController } from '../components/AIController';
 import { inactiveState } from '../components/aggro';
 import type { Navigator } from '../components/FlowField';
 import type { Attack, ContactAttacker, Damageable } from '../combat/Attack';
+import { eventBus, GameEvent } from '../state/eventBus';
 
 const TELEGRAPH_TINT = 0xffe089; //  warning hue worn during the wind-up
 const LANE_COLOR = 0xffd24d; //      colour of the drawn lunge lane
@@ -212,6 +213,7 @@ export class Charger
   }
 
   private die(): void {
+    eventBus.emit(GameEvent.EnemyDied, this.x, this.y);
     this.setVelocity(0, 0);
     this.lane.destroy();
     this.scene.tweens.killTweensOf(this);

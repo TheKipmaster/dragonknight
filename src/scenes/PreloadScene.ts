@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE, TEX, DECALS } from '../config/constants';
+import { TILE, TEX, DECALS, SPLAT } from '../config/constants';
 import { ROOM_IDS } from '../world/rooms';
 import {
   collectTemplateNames,
@@ -42,6 +42,7 @@ export class PreloadScene extends Phaser.Scene {
     this.makeRect(TEX.walker, TILE, TILE, 0xd64550, 0x7a1f29);
     this.makeRect(TEX.charger, TILE, TILE, 0xb05cf0, 0x5a2080);
     this.makeRect(TEX.key, 10, 12, 0xffd34d, 0x8a6a12);
+    this.makeSplat();
 
     // Phaser doesn't expand Tiled object templates; resolve them before any
     // Room is built (see tiledTemplates.ts), then enter the game.
@@ -100,6 +101,28 @@ export class PreloadScene extends Phaser.Scene {
     g.fillStyle(border, 1).fillRect(0, 0, w, h);
     g.fillStyle(fill, 1).fillRect(1, 1, w - 2, h - 2);
     g.generateTexture(key, w, h);
+    g.destroy();
+  }
+
+  /**
+   * Generate one irregular death-splat blob: several overlapping circles jittered
+   * around the centre, baked into a square texture sized to fit the largest. One
+   * texture serves all splats; variety comes from per-spawn rotation/scale.
+   */
+  private makeSplat(): void {
+    const r = SPLAT.radius;
+    const size = r * 2; // texture is a tight square around the blob's reach
+    const c = size / 2;
+    const g = this.add.graphics();
+    g.fillStyle(SPLAT.color, 1);
+    g.fillCircle(c, c, r * 0.6); // a solid core so the blob never looks hollow
+    for (let i = 0; i < SPLAT.blobs; i++) {
+      const angle = (i / SPLAT.blobs) * Math.PI * 2;
+      const dist = r * 0.4;
+      const blobR = r * Phaser.Math.FloatBetween(0.3, 0.5);
+      g.fillCircle(c + Math.cos(angle) * dist, c + Math.sin(angle) * dist, blobR);
+    }
+    g.generateTexture(TEX.splat, size, size);
     g.destroy();
   }
 }

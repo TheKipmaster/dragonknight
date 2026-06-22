@@ -28,6 +28,7 @@ export const TEX = {
   walker: 'walker',
   charger: 'charger',
   key: 'key',
+  splat: 'splat', //      death decal dropped where an enemy dies
   tiles: 'tiles-stone', // shared dungeon tileset image (public/tiles/stone.png)
 } as const;
 
@@ -46,6 +47,22 @@ export const DECALS: Record<string, string> = {
 
 /** Depth for floor decals: above the floor layer (-10), below walls/entities (0). */
 export const DECAL_DEPTH = -9;
+
+/**
+ * Death splats — the blood decal an enemy leaves where it dies. One procedural
+ * texture (generated in PreloadScene) is reused for every splat; per-spawn
+ * rotation and scale jitter keep them from looking stamped. Splats are
+ * room-scoped: GameScene clears them on transition, so they accumulate within a
+ * fight but never leak between Rooms.
+ */
+export const SPLAT = {
+  color: 0x8a1f2a, //     blob fill (dark dried-blood red)
+  radius: 6, //           base radius of the baked blob texture (px)
+  blobs: 5, //            overlapping circles that make one irregular splat
+  minScale: 0.7, //       per-spawn scale jitter range (multiplies radius)
+  maxScale: 1.2,
+  alpha: 0.85, //         decal opacity
+} as const;
 
 /** Tileset name as authored in the Tiled maps; must match `addTilesetImage`. */
 export const TILESET_NAME = 'stone';

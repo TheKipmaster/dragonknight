@@ -12,7 +12,7 @@ import type { Room } from '../world/Room';
 import { GameState } from '../state/GameState';
 import { eventBus, GameEvent } from '../state/eventBus';
 import { isContactAttacker } from '../combat/Attack';
-import { SPAWNER, TILE } from '../config/constants';
+import { DECAL_DEPTH, SPAWNER, SPLAT, TEX, TILE } from '../config/constants';
 
 /**
  * Gameplay scene. A RoomManager owns the active Room and drives transitions
@@ -31,6 +31,8 @@ export class GameScene extends Phaser.Scene {
   private hostiles!: Phaser.GameObjects.Group;
   private solids!: Phaser.GameObjects.Group;
   private pickups!: Phaser.GameObjects.Group;
+  /** Death splats dropped this Room; cleared on transition so they don't leak. */
+  private decals!: Phaser.GameObjects.Group;
 
   private spawnSwitch?: Switch;
   private switchOverlap?: Phaser.Physics.Arcade.Collider;
@@ -50,6 +52,7 @@ export class GameScene extends Phaser.Scene {
     this.hostiles = this.add.group();
     this.solids = this.add.group();
     this.pickups = this.add.group();
+    this.decals = this.add.group();
 
     // The Player is the through-line across Rooms: created once, repositioned by
     // the manager on each transition.
@@ -75,8 +78,10 @@ export class GameScene extends Phaser.Scene {
     this.manager.enter(GameState.activeRoomId);
 
     eventBus.on(GameEvent.PlayerDied, this.onPlayerDied, this);
+    eventBus.on(GameEvent.EnemyDied, this.onEnemyDied, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       eventBus.off(GameEvent.PlayerDied, this.onPlayerDied, this);
+      eventBus.off(GameEvent.EnemyDied, this.onEnemyDied, this);
     });
   }
 
@@ -129,6 +134,7 @@ export class GameScene extends Phaser.Scene {
     this.hostiles.clear(true, true);
     this.solids.clear(true, true);
     this.pickups.clear(true, true);
+    this.decals.clear(true, true);
     this.switchOverlap?.destroy();
     this.switchOverlap = undefined;
     this.spawnSwitch?.destroy();
@@ -199,6 +205,17 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     // No wall-free spot found this tick; skip silently.
+  }
+
+  /** An enemy died: drop a jittered floor splat under the floor's entities. */
+  private onEnemyDied(x: number, y: number): void {
+    const splat = this.add
+      .image(x, y, TEX.splat)
+      .setDepth(DECAL_DEPTH)
+      .setAlpha(SPLAT.alpha)
+      .setRotation(Math.random() * Math.PI * 2)
+      .setScale(Phaser.Math.FloatBetween(SPLAT.minScale, SPLAT.maxScale));
+    this.decals.add(splat);
   }
 
   private onPlayerDied(): void {

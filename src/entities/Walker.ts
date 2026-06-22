@@ -6,6 +6,7 @@ import { AIController } from '../components/AIController';
 import { inactiveState } from '../components/aggro';
 import type { Navigator } from '../components/FlowField';
 import type { Attack, ContactAttacker, Damageable } from '../combat/Attack';
+import { eventBus, GameEvent } from '../state/eventBus';
 
 /**
  * The first mobile enemy (composition-lite, ADR 0002). It walks straight at the
@@ -96,6 +97,7 @@ export class Walker
   }
 
   private die(): void {
+    eventBus.emit(GameEvent.EnemyDied, this.x, this.y);
     this.setVelocity(0, 0);
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.scene.tweens.add({
