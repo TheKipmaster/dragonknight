@@ -71,15 +71,6 @@ inventory UI · more than two enemy types · gamepad input.
 - [ ] **Treasure + win state** — the goal in the final Room. Touching the Treasure is the
       win: it fires a one-shot win **Cutscene**, then returns to the **Title screen**, closing
       the loop so the slice is replayable from the front door.
-- [ ] **Lighting (atmospheric)** — a Room can be authored darker (a per-map ambient
-      darkness property, ADR 0001), with **light sources** casting a radial gradient. Mood
-      only — never gates visibility (geometry, Enemies, Player stay visible; LoS-style fog is
-      out of scope). A light source is one **emitter** concept (radius/intensity/colour)
-      positioned by an owner: static torches authored in Tiled, plus entity-owned emitters so
-      the **Treasure glows** (draws the eye to the goal) and the **Player** carries a faint
-      aura (no black-silhouette in dim Rooms). Sequence with the Art pass — placeholder
-      primitives have no normal maps, so favour an overlay/render-texture approach over
-      Phaser's Light2D pipeline.
 - [ ] **Art pass** — revisit placeholder primitives once the feel is proven. Now has two
       dependents: it supplies the **Portraits** the Dialogue system needs, and it should land
       in step with **Lighting** (placeholder primitives have no normal maps — favour an
@@ -108,10 +99,6 @@ inventory UI · more than two enemy types · gamepad input.
       the in-world cutscene director (the Title has no Player/Room/`GameState`). Minimal
       "press to start"; no load/options menu (no persistence in the slice). The win flow
       returns here.
-- [ ] **Push-Block puzzle** — `Block` + `Switch` (door-opening flavour of the Switch). The
-      Block shoves in grid-aligned steps on the Tiled collision grid (ADR 0005) onto a Switch
-      to open a path. Switch state model (held-while-pressed vs latch-open-permanently)
-      deferred to implementation/level design.
 
 ## Known bugs
 
@@ -124,6 +111,19 @@ inventory UI · more than two enemy types · gamepad input.
 
 Things raised during the build and consciously deferred — not forgotten.
 
+- [ ] **Push-Block puzzle** — `Block` + `Switch` (door-opening flavour of the Switch). The
+      Block shoves in grid-aligned steps on the Tiled collision grid (ADR 0005) onto a Switch
+      to open a path. Switch state model (held-while-pressed vs latch-open-permanently)
+      deferred to implementation/level design.
+- [ ] **Lighting (atmospheric)** — a Room can be authored darker (a per-map ambient
+      darkness property, ADR 0001), with **light sources** casting a radial gradient. Mood
+      only — never gates visibility (geometry, Enemies, Player stay visible; LoS-style fog is
+      out of scope). A light source is one **emitter** concept (radius/intensity/colour)
+      positioned by an owner: static torches authored in Tiled, plus entity-owned emitters so
+      the **Treasure glows** (draws the eye to the goal) and the **Player** carries a faint
+      aura (no black-silhouette in dim Rooms). Sequence with the Art pass — placeholder
+      primitives have no normal maps, so favour an overlay/render-texture approach over
+      Phaser's Light2D pipeline.
 - **Fuller smoke assertions** — drive the actual sword swing via input; assert contact damage drops a Heart; assert the combo deals 2→3→5; assert respawn refills Hearts.
 - **Per-beat combo differentiation** — currently only damage scales; could give the finisher a bigger/heavier hitbox.
 - **Adjacent-Room preloading** — the ADR 0001 optimisation; only needed for a larger/streaming world.
