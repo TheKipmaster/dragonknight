@@ -96,6 +96,15 @@ export class GameScene extends Phaser.Scene {
     // One flow field per Room (walls are static); enemies share it for chasing.
     this.nav = new FlowField(room.buildNavGrid());
 
+    for (const e of room.enemies) {
+      const enemy = e.kind === 'charger'
+        ? new Charger(this, e.x, e.y, this.player, this.nav)
+        : new Walker(this, e.x, e.y, this.player, this.nav);
+      
+      this.attackables.add(enemy);
+      this.hostiles.add(enemy);
+    }
+
     // Spawn map-authored items, skipping any already collected (they don't respawn).
     for (const item of room.items) {
       if (item.kind === 'key' && !GameState.progress.itemsTaken.has(item.id)) {

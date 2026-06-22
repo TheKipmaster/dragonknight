@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { DECALS, DECAL_DEPTH, TEX, TILE, TILESET_NAME } from '../config/constants';
-import type { DoorTrigger, ItemSpawn, Room } from './Room';
+import type { DoorTrigger, EnemySpawn, ItemSpawn, Room } from './Room';
 import type { NavGrid } from '../components/FlowField';
 
 /**
@@ -29,6 +29,7 @@ export class TiledRoom implements Room {
 
   readonly doors: DoorTrigger[] = [];
   readonly items: ItemSpawn[] = [];
+  readonly enemies: EnemySpawn[] = [];
 
   private map?: Phaser.Tilemaps.Tilemap;
   private layers: Phaser.Tilemaps.TilemapLayer[] = [];
@@ -118,6 +119,8 @@ export class TiledRoom implements Room {
           targetSpawn: props.targetSpawn,
           lockId: props.locked === 'true' ? props.lockId : undefined,
         });
+      } else if (obj.point && obj.type === 'enemy') {
+        this.enemies.push({id: `${this.id}#${obj.id}`, kind: obj.name, x, y})
       } else if (obj.point && obj.name === 'key') {
         this.items.push({ id: `${this.id}#${obj.id}`, kind: 'key', x, y });
       } else if (obj.point && obj.name && obj.name in DECALS) {

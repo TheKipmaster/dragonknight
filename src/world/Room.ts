@@ -25,6 +25,13 @@ export interface ItemSpawn {
   readonly x: number;
   readonly y: number;
 }
+export interface EnemySpawn {
+  /** Persistent id (`roomId#objectId`) so a collected item never respawns. */
+  readonly id: string;
+  readonly kind: string;
+  readonly x: number;
+  readonly y: number;
+}
 
 /**
  * The Room lifecycle seam (ADR 0001).
@@ -49,6 +56,9 @@ export interface Room {
 
   /** Item spawns parsed from the map's object layer (e.g. Keys). */
   readonly items: readonly ItemSpawn[];
+
+  /** Item spawns parsed from the map's object layer (e.g. Keys). */
+  readonly enemies: readonly EnemySpawn[];
 
   /** Look up a named spawn marker (e.g. a door's targetSpawn). */
   spawnAt(name: string): Phaser.Math.Vector2 | undefined;
