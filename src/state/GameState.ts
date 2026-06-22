@@ -30,7 +30,7 @@ export const GameState = {
     maxHalfHearts: 6,
   } as PlayerState,
 
-  activeRoomId: 'room-debug',
+  activeRoomId: 'entrance',
 
   progress: {
     keysHeld: 0,
