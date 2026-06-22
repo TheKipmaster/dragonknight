@@ -9,6 +9,7 @@ PROMPT.md
 # (the game loads stone.png and the .tmj files; these are just for eyeballing)
 public/maps/*.preview.png
 public/tiles/*.x8.png
+public/*.tiled-session
 
 # Local Claude config/state
 .claude/
