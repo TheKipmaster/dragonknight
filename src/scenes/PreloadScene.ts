@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE, TEX } from '../config/constants';
+import { TILE, TEX, DECALS } from '../config/constants';
 import { ROOM_IDS } from '../world/rooms';
 
 /**
@@ -18,7 +18,9 @@ export class PreloadScene extends Phaser.Scene {
   preload(): void {
     // Served from public/ at the site root (see vite defaults).
     this.load.image(TEX.tiles, 'tiles/stone.png');
-    this.load.image(TEX.pentagram, 'tiles/pentagram.png');
+    for (const [key, path] of Object.entries(DECALS)) {
+      this.load.image(key, path); // key doubles as the texture key (see DECALS)
+    }
     for (const id of ROOM_IDS) {
       this.load.tilemapTiledJSON(id, `maps/${id}.tmj`);
     }

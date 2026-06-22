@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TEX, TILE, TILESET_NAME } from '../config/constants';
+import { DECALS, DECAL_DEPTH, TEX, TILE, TILESET_NAME } from '../config/constants';
 import type { DoorTrigger, ItemSpawn, Room } from './Room';
 import type { NavGrid } from '../components/FlowField';
 
@@ -120,10 +120,10 @@ export class TiledRoom implements Room {
         });
       } else if (obj.point && obj.name === 'key') {
         this.items.push({ id: `${this.id}#${obj.id}`, kind: 'key', x, y });
-      } else if (obj.point && obj.name === 'pentagram') {
-        // A floor decal: centred on the marker (image origin defaults to 0.5),
-        // drawn above the floor (-10) but below walls/entities (0).
-        this.decals.push(this.scene.add.image(x, y, TEX.pentagram).setDepth(-9));
+      } else if (obj.point && obj.name && obj.name in DECALS) {
+        // A floor decal: the marker name is the texture key (see DECALS). Centred
+        // on the marker (image origin defaults to 0.5), drawn above the floor.
+        this.decals.push(this.scene.add.image(x, y, obj.name).setDepth(DECAL_DEPTH));
       } else if (obj.point && obj.name) {
         this.spawns.set(obj.name, new Phaser.Math.Vector2(x, y));
       }

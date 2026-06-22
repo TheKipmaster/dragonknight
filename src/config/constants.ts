@@ -29,8 +29,23 @@ export const TEX = {
   charger: 'charger',
   key: 'key',
   tiles: 'tiles-stone', // shared dungeon tileset image (public/tiles/stone.png)
-  pentagram: 'pentagram', // floor decal placed at a `pentagram` point marker
 } as const;
+
+/**
+ * Floor decals — purely decorative images dropped on a Room's floor.
+ *
+ * Each key is BOTH the texture key it's loaded under AND the name a `point`
+ * object must carry in a map's `objects` layer to spawn it (the id-doubles-as-key
+ * idiom, like ROOM_IDS). PreloadScene loads every entry; TiledRoom draws any
+ * marker whose name is a key here. So adding a decal is: drop the PNG, add one
+ * line below, place a same-named point marker in Tiled — no loader changes.
+ */
+export const DECALS: Record<string, string> = {
+  pentagram: 'tiles/pentagram.png',
+};
+
+/** Depth for floor decals: above the floor layer (-10), below walls/entities (0). */
+export const DECAL_DEPTH = -9;
 
 /** Tileset name as authored in the Tiled maps; must match `addTilesetImage`. */
 export const TILESET_NAME = 'stone';
