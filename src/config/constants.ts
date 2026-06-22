@@ -29,6 +29,7 @@ export const TEX = {
   charger: 'charger',
   key: 'key',
   tiles: 'tiles-stone', // shared dungeon tileset image (public/tiles/stone.png)
+  pentagram: 'pentagram', // floor decal placed at a `pentagram` point marker
 } as const;
 
 /** Tileset name as authored in the Tiled maps; must match `addTilesetImage`. */

@@ -18,6 +18,7 @@ export class PreloadScene extends Phaser.Scene {
   preload(): void {
     // Served from public/ at the site root (see vite defaults).
     this.load.image(TEX.tiles, 'tiles/stone.png');
+    this.load.image(TEX.pentagram, 'tiles/pentagram.png');
     for (const id of ROOM_IDS) {
       this.load.tilemapTiledJSON(id, `maps/${id}.tmj`);
     }

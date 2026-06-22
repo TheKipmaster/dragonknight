@@ -32,6 +32,8 @@ export class TiledRoom implements Room {
 
   private map?: Phaser.Tilemaps.Tilemap;
   private layers: Phaser.Tilemaps.TilemapLayer[] = [];
+  /** Non-tile floor decorations (e.g. the pentagram); torn down with the Room. */
+  private readonly decals: Phaser.GameObjects.Image[] = [];
   private wallLayer?: Phaser.Tilemaps.TilemapLayer;
   /** Colliders this Room created; torn down on deactivate so they never leak
    *  across a transition (the wall layer they reference is being destroyed). */
@@ -96,7 +98,16 @@ export class TiledRoom implements Room {
       const y = obj.y ?? 0;
       if (obj.name === 'door') {
         const props = this.props(obj);
-        if (!props.targetRoom || !props.targetSpawn) continue;
+        if (!props.targetRoom || !props.targetSpawn) {
+          // A door with no destination is almost always an authoring slip
+          // (misspelled property name, kebab-case instead of camelCase). Fail
+          // loud in dev so it surfaces instead of silently doing nothing.
+          console.warn(
+            `Room ${this.id}: 'door' object #${obj.id} is missing ` +
+              `targetRoom/targetSpawn (got: ${Object.keys(props).join(', ') || 'none'}) — skipped`,
+          );
+          continue;
+        }
         const w = obj.width || TILE;
         const h = obj.height || TILE;
         const zone = this.scene.add.zone(x + w / 2, y + h / 2, w, h);
@@ -109,6 +120,10 @@ export class TiledRoom implements Room {
         });
       } else if (obj.point && obj.name === 'key') {
         this.items.push({ id: `${this.id}#${obj.id}`, kind: 'key', x, y });
+      } else if (obj.point && obj.name === 'pentagram') {
+        // A floor decal: centred on the marker (image origin defaults to 0.5),
+        // drawn above the floor (-10) but below walls/entities (0).
+        this.decals.push(this.scene.add.image(x, y, TEX.pentagram).setDepth(-9));
       } else if (obj.point && obj.name) {
         this.spawns.set(obj.name, new Phaser.Math.Vector2(x, y));
       }
@@ -165,6 +180,8 @@ export class TiledRoom implements Room {
     for (const door of this.doors) door.zone.destroy();
     this.doors.length = 0;
     this.items.length = 0;
+    for (const decal of this.decals) decal.destroy();
+    this.decals.length = 0;
     for (const layer of this.layers) layer.destroy();
     this.layers = [];
     this.wallLayer = undefined;

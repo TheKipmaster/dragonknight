@@ -5,6 +5,6 @@
  * this list. Each id doubles as the cache key for its `.tmj` (loaded as
  * `maps/<id>.tmj`) and as `GameState.activeRoomId`.
  */
-export const ROOM_IDS = ['room-01', 'room-02', 'room-debug'] as const;
+export const ROOM_IDS = ['room-01', 'room-02', 'room-debug', 'sanctum'] as const;
 
 export type RoomId = (typeof ROOM_IDS)[number];
