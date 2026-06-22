@@ -106,6 +106,41 @@
                  "template":"..\/templates\/spawn.tx",
                  "x":168,
                  "y":40.5
+                }, 
+                {
+                 "id":12,
+                 "template":"..\/templates\/walker.tx",
+                 "type":"enemy",
+                 "x":86,
+                 "y":72
+                }, 
+                {
+                 "id":13,
+                 "template":"..\/templates\/walker.tx",
+                 "type":"enemy",
+                 "x":157,
+                 "y":157.5
+                }, 
+                {
+                 "id":14,
+                 "template":"..\/templates\/walker.tx",
+                 "type":"enemy",
+                 "x":64,
+                 "y":156
+                }, 
+                {
+                 "id":15,
+                 "template":"..\/templates\/walker.tx",
+                 "type":"enemy",
+                 "x":164.5,
+                 "y":85.5
+                }, 
+                {
+                 "id":16,
+                 "template":"..\/templates\/walker.tx",
+                 "type":"enemy",
+                 "x":226,
+                 "y":191
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -114,7 +149,7 @@
          "y":0
         }],
  "nextlayerid":4,
- "nextobjectid":7,
+ "nextobjectid":17,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2-2-geb83ddb9",

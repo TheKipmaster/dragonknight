@@ -102,6 +102,30 @@
                  "width":0,
                  "x":592.666666666667,
                  "y":324.666666666667
+                }, 
+                {
+                 "id":9,
+                 "template":"..\/templates\/walker.tx",
+                 "x":560.666666666667,
+                 "y":289.333333333333
+                }, 
+                {
+                 "id":10,
+                 "template":"..\/templates\/walker.tx",
+                 "x":543.333333333333,
+                 "y":322.666666666667
+                }, 
+                {
+                 "id":11,
+                 "template":"..\/templates\/walker.tx",
+                 "x":522,
+                 "y":281.333333333333
+                }, 
+                {
+                 "id":12,
+                 "template":"..\/templates\/charger.tx",
+                 "x":484,
+                 "y":226.666666666667
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -110,7 +134,7 @@
          "y":0
         }],
  "nextlayerid":4,
- "nextobjectid":7,
+ "nextobjectid":13,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2-2-geb83ddb9",
