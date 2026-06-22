@@ -4,7 +4,7 @@ The MVP goal, current status, and backlog. Architectural _decisions_ live in
 [`docs/adr/`](./adr); domain _terms_ live in [`CONTEXT.md`](../CONTEXT.md). This
 file is the "what we're building and what's left" — keep it current as work lands.
 
-_Status as of 2026-06-21._
+_Status as of 2026-06-22._
 
 ## MVP goal
 
@@ -71,6 +71,17 @@ inventory UI · more than two enemy types · gamepad input.
 - [ ] **Treasure + win state** — the goal in the final Room. Touching the Treasure is the
       win: it fires a one-shot win **Cutscene**, then returns to the **Title screen**, closing
       the loop so the slice is replayable from the front door.
+- [ ] **Traps** — hidden magic-glyph floor hazards (`Trap`, CONTEXT.md). Invisible until an
+      entity steps on one, then an instant flash + hit — no Telegraph. **Victim-aware damage**
+      through the ADR 0002 chokepoint (ADR 0008): a survivable bite to the Player, lethal to an
+      ordinary Enemy, so you can lure Enemies onto them. Discriminated by two overlaps
+      (`player × traps`, `enemies × traps`), not a `faction` concept. Springs once free, then
+      stays **permanently visible** and **re-arms on a cadence** (lit = live, dimmed = safe).
+      Map-authored as `name: "trap"` point objects with per-Trap overrides via Tiled props;
+      tunables centralised in `constants.ts`. "Discovered" persists in `GameState.progress`
+      (ADR 0003 amendment — `progress` now also carries hazard memory). Needs a smoke assertion
+      (Player drops 2 Hearts, a Walker dies) and likely surfaces the dead-Charger bug below
+      (a lured Charger killed mid-lunge takes the same `die()` path).
 - [ ] **Art pass** — revisit placeholder primitives once the feel is proven. Now has two
       dependents: it supplies the **Portraits** the Dialogue system needs, and it should land
       in step with **Lighting** (placeholder primitives have no normal maps — favour an
@@ -132,4 +143,7 @@ Things raised during the build and consciously deferred — not forgotten.
   lose them when sight breaks), instead of proximity aggro. A stealthier feel; deferred
   out of the pathfinding item to keep that one about geometry, not perception.
 - **Gamepad input** — keyboard + mouse only for the MVP, behind an input-mapping indirection later.
-- **Split the `Switch` term** — if the "spawner trap vs progression trigger" overload starts to chafe, introduce a distinct `Trap`/`Spawner` concept.
+- **Split the `Switch` term** — _partially resolved._ The hazard half is now its own **Trap**
+  concept (CONTEXT.md, ADR 0008) — a hidden, victim-harming floor glyph, distinct from the
+  deliberate world-changing Switch. Still open: rename the spawner-flavoured Switch to a
+  distinct **Spawner** term if that overload keeps chafing.

@@ -38,3 +38,12 @@ A future reader will ask "why not just use the registry?" — this is the answer
 migrate state into it. `GameState` must hold everything that has to outlive a Room teardown
 (per ADR 0001). The event bus is for *notifications*; `GameState` is for *data* — keep that
 split clean (don't stash authoritative state in event payloads).
+
+**Amendment (Traps, ADR 0008).** `progress` was framed as *progression* — Keys held, Doors
+opened, Cutscenes seen. Traps add a second, deliberately broader category: **hazard memory**.
+A sprung Trap records its `${roomId}#${objId}` in `progress` so it rebuilds *revealed* (but
+still live) on Room re-entry instead of getting its hidden first-strike twice. Only the
+"discovered" bit persists; the re-arm cadence and lit/dimmed phase are transient and
+recomputed live. So `progress` is now "anything that must survive Room teardown and the
+respawn-to-entrance loop," not strictly progression — a Trap is the first non-progression
+resident.

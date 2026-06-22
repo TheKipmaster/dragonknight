@@ -47,6 +47,10 @@ _Avoid_: Pass, Token.
 A floor trigger the Player activates by standing on it (or by a Block pushed onto it). Its effect is configurable: open a Door or path, or — while held down — spawn Enemies on a cadence. Changes appearance to show its pressed state.
 _Avoid_: Button, Pressure Plate, Plate, Lever (a Lever would be a separate hand-operated variant). A spawner is a Switch with a spawning effect, not a distinct term.
 
+**Trap**:
+A hostile floor hazard that lies hidden until an entity steps onto it, then springs — harming whoever tripped it. Unlike a Switch, it is invisible until sprung, triggered *incidentally* by any entity that walks over it (Enemies included, opening the option of luring them onto one), and its effect is to harm rather than change the world. Shares only the floor-overlap *mechanism* with a Switch, not the concept. It strikes instantly on contact — its flash is hit feedback, not a Telegraph; there is no reaction window (you cannot warn about a hazard you couldn't see). It is hidden only until its *first* spring; thereafter it stays permanently visible and re-arms on a cadence, so brightness reads its state — lit means live, dimmed means spent and safe. The first contact is the only free hit it gets; after that it is a readable timing hazard. Its bite is calibrated to its victim — a painful but survivable wound to the Player, typically lethal to an ordinary Enemy — so luring an Enemy onto one is a clean kill.
+_Avoid_: Switch (a Switch is a deliberate, visible, world-changing trigger), Telegraph (a Trap gives no wind-up), Spike, Hazard, Mine. The hidden magic-glyph art is flavour, not the term.
+
 **Block**:
 A pushable object used in puzzles, typically shoved onto a Switch. Moves in grid-aligned steps for predictability.
 _Avoid_: Boulder, Crate, Box.
