@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ENEMY, TEX } from '../config/constants';
+import { WALKER, TEX } from '../config/constants';
 import { Health } from '../components/Health';
 import { Knockback } from '../components/Knockback';
 import { AIController } from '../components/AIController';
@@ -41,11 +41,11 @@ export class Walker
     body.setSize(12, 12).setOffset(2, 4);
     this.setCollideWorldBounds(true);
 
-    this.health = new Health(scene, ENEMY.maxHp, { onDeath: () => this.die() });
+    this.health = new Health(scene, WALKER.maxHp, { onDeath: () => this.die() });
     this.knockback = new Knockback(this);
 
     this.ai = new AIController()
-      .add('inactive', inactiveState(this, target, ENEMY.aggroRange, nav, () => this.ai.change('chase')))
+      .add('inactive', inactiveState(this, target, WALKER.aggroRange, nav, () => this.ai.change('chase')))
       .add('chase', { update: () => this.chase() })
       .add('hurt', {
         update: () => {
@@ -69,11 +69,11 @@ export class Walker
   private chase(): void {
     const dir = this.nav.steer(this.x, this.y);
     if (dir) {
-      this.setVelocity(dir.x * ENEMY.speed, dir.y * ENEMY.speed);
+      this.setVelocity(dir.x * WALKER.speed, dir.y * WALKER.speed);
       return;
     }
     const angle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
-    this.setVelocity(Math.cos(angle) * ENEMY.speed, Math.sin(angle) * ENEMY.speed);
+    this.setVelocity(Math.cos(angle) * WALKER.speed, Math.sin(angle) * WALKER.speed);
   }
 
   /** Damageable: take a hit from the Player's sword. */
@@ -81,15 +81,15 @@ export class Walker
     if (!this.health.takeDamage(attack.damage)) return;
     this.flash();
     this.knockback.apply(attack.fromX, attack.fromY, attack.knockback);
-    this.hurtUntil = this.scene.time.now + ENEMY.hurtMs;
+    this.hurtUntil = this.scene.time.now + WALKER.hurtMs;
     this.ai.change('hurt');
   }
 
   /** ContactAttacker: the damage dealt to the Player on contact. */
   contactAttack(): Attack {
     return {
-      damage: ENEMY.contactDamage,
-      knockback: ENEMY.contactKnockback,
+      damage: WALKER.contactDamage,
+      knockback: WALKER.contactKnockback,
       fromX: this.x,
       fromY: this.y,
     };

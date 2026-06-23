@@ -107,7 +107,7 @@ export const SWORD = {
 
 /** ── Walker enemy tuning ──────────────────────────────────────────────────
  *  The first enemy: walks straight at the Player and deals contact damage. */
-export const ENEMY = {
+export const WALKER = {
   speed: 55, //          chase speed (px/s); slower than the Player (90)
   aggroRange: 120, //    dormant until the Player comes within this distance (px)
   maxHp: 10, //           hit points; a full combo (2+3+5=10) over-kills it

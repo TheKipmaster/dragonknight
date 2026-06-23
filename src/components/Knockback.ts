@@ -5,7 +5,7 @@ import Phaser from 'phaser';
  * from an origin point. The *duration* of the shove (how long the host gives up
  * control of its own velocity) is owned by the host — the Player relinquishes
  * movement for PLAYER.knockbackMs, the Walker sits in its `hurt` state for
- * ENEMY.hurtMs — because that window is entity-specific.
+ * WALKER.hurtMs — because that window is entity-specific.
  */
 export class Knockback {
   constructor(private readonly sprite: Phaser.Physics.Arcade.Sprite) {}
