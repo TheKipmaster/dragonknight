@@ -1,0 +1,7 @@
+# Generated / vendored — don't format.
+dist
+node_modules
+package-lock.json
+
+# Stray exported HTML walkthrough, not maintained as source.
+docs/parser-templates-walkthrough.html
