@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { NavGrid } from '../components/FlowField';
+import type { TripwireName } from '../state/tripwires';
 
 /**
  * A door trigger: an overlap zone that, when the Player enters it, transitions
@@ -78,6 +79,28 @@ export interface SpawnerSpawn {
 }
 
 /**
+ * A Tripwire to wire when the Room activates (CONTEXT.md; ADR 0010). One generic
+ * shape for *every* behaviour — the parser learns nothing about what a Tripwire
+ * does; the scene wires `zone` to the `tripwires` registry, which dispatches by
+ * `name` to a code callback. The Room owns `zone` (created in readObjects,
+ * destroyed in deactivate — the Door pattern).
+ */
+export interface TripwireSpawn {
+  /** Persistent `${roomId}#${objId}` — the central once-guard key (ADR 0010). */
+  readonly id: string;
+  /** The authored name (Tiled `obj.name`), validated against TRIPWIRE_NAMES. */
+  readonly name: TripwireName;
+  /** Fire on every crossing instead of once-ever (the `repeat` custom property). */
+  readonly repeat: boolean;
+  /** World-space rectangle, handed to handlers for region-scoped targeting. */
+  readonly region: Phaser.Geom.Rectangle;
+  /** Remaining Tiled custom properties, passed through to the handler. */
+  readonly props: Readonly<Record<string, string>>;
+  /** Room-owned overlap zone; the scene registers the Player overlap against it. */
+  readonly zone: Phaser.GameObjects.Zone;
+}
+
+/**
  * The Room lifecycle seam (ADR 0001).
  *
  * Loading is split into two costs that stay separate: asset I/O (expensive,
@@ -109,6 +132,9 @@ export interface Room {
 
   /** Spawner spawns parsed from the map's object layer (ADR 0009). */
   readonly spawners: readonly SpawnerSpawn[];
+
+  /** Tripwires parsed from the map's object layer (ADR 0010). */
+  readonly tripwires: readonly TripwireSpawn[];
 
   /** Look up a named spawn marker (e.g. a door's targetSpawn). */
   spawnAt(name: string): Phaser.Math.Vector2 | undefined;

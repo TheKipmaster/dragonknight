@@ -4,6 +4,7 @@ import { Health } from '../components/Health';
 import { Knockback } from '../components/Knockback';
 import { AIController } from '../components/AIController';
 import { inactiveState } from '../components/aggro';
+import type { Activatable } from '../components/Activatable';
 import type { Navigator } from '../components/FlowField';
 import type { Attack, ContactAttacker, Damageable } from '../combat/Attack';
 import { eventBus, GameEvent } from '../state/eventBus';
@@ -32,7 +33,7 @@ const LANE_WIDTH = 6; //             thickness of the lane indicator (px)
  */
 export class Charger
   extends Phaser.Physics.Arcade.Sprite
-  implements Damageable, ContactAttacker
+  implements Damageable, ContactAttacker, Activatable
 {
   private readonly health: Health;
   private readonly knockback: Knockback;
@@ -96,6 +97,13 @@ export class Charger
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
     this.ai.update(delta);
+  }
+
+  /** Activatable: wake from `inactive` straight into the chase, ignoring aggro
+   *  range (a Tripwire woke us deliberately, ADR 0010). Only acts on a dormant
+   *  Charger, so an already-aggroed one mid-wind-up/lunge is never interrupted. */
+  wake(): void {
+    if (this.ai.state === 'inactive') this.ai.change('chase');
   }
 
   /** chase: close distance on the Player — routing around walls via the flow

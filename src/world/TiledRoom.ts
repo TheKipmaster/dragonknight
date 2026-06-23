@@ -1,7 +1,16 @@
 import Phaser from 'phaser';
 import { DECALS, DECAL_DEPTH, SPAWNER, TEX, TILE, TILESET_NAME, TRAP } from '../config/constants';
-import type { DoorTrigger, EnemySpawn, ItemSpawn, Room, SpawnerSpawn, TrapSpawn } from './Room';
+import type {
+  DoorTrigger,
+  EnemySpawn,
+  ItemSpawn,
+  Room,
+  SpawnerSpawn,
+  TrapSpawn,
+  TripwireSpawn,
+} from './Room';
 import type { NavGrid } from '../components/FlowField';
+import { TRIPWIRE_NAMES, type TripwireName } from '../state/tripwires';
 
 /**
  * A Room backed by a Tiled map (ADR 0001).
@@ -32,6 +41,7 @@ export class TiledRoom implements Room {
   readonly enemies: EnemySpawn[] = [];
   readonly traps: TrapSpawn[] = [];
   readonly spawners: SpawnerSpawn[] = [];
+  readonly tripwires: TripwireSpawn[] = [];
 
   private map?: Phaser.Tilemaps.Tilemap;
   private layers: Phaser.Tilemaps.TilemapLayer[] = [];
@@ -97,6 +107,7 @@ export class TiledRoom implements Room {
     this.enemies.length = 0;
     this.traps.length = 0;
     this.spawners.length = 0;
+    this.tripwires.length = 0;
     const objects = map.getObjectLayer('objects')?.objects ?? [];
 
     for (const obj of objects) {
@@ -123,6 +134,33 @@ export class TiledRoom implements Room {
           targetRoom: props.targetRoom,
           targetSpawn: props.targetSpawn,
           lockId: props.locked === 'true' ? props.lockId : undefined,
+        });
+      } else if (obj.type === 'tripwire') {
+        // An invisible behaviour region (ADR 0010). A rectangle whose `name` is
+        // the Tripwire's logical name (dispatched in code), validated against the
+        // TRIPWIRE_NAMES registry; an unknown name is almost always a typo (the
+        // only stringly-typed surface left), so fail loud the Door way. `repeat`
+        // opts out of the default once-ever firing.
+        const name = obj.name ?? '';
+        if (!(TRIPWIRE_NAMES as readonly string[]).includes(name)) {
+          console.warn(
+            `Room ${this.id}: 'tripwire' object #${obj.id} has unknown name "${name}" ` +
+              `(known: ${TRIPWIRE_NAMES.join(', ')}) — skipped`,
+          );
+          continue;
+        }
+        const p = this.props(obj);
+        const w = obj.width || TILE;
+        const h = obj.height || TILE;
+        const zone = this.scene.add.zone(x + w / 2, y + h / 2, w, h);
+        this.scene.physics.add.existing(zone, true); // static body for overlap
+        this.tripwires.push({
+          id: `${this.id}#${obj.id}`,
+          name: name as TripwireName,
+          repeat: p.repeat === 'true',
+          region: new Phaser.Geom.Rectangle(x, y, w, h),
+          props: p,
+          zone,
         });
       } else if (obj.point && obj.type === 'enemy') {
         this.enemies.push({id: `${this.id}#${obj.id}`, kind: obj.name, x, y})
@@ -218,6 +256,10 @@ export class TiledRoom implements Room {
     this.colliders.length = 0;
     for (const door of this.doors) door.zone.destroy();
     this.doors.length = 0;
+    // Tripwire zones are Room-owned (the Door pattern, ADR 0010); their runtimes
+    // and overlaps are torn down by the scene's clearContent().
+    for (const tw of this.tripwires) tw.zone.destroy();
+    this.tripwires.length = 0;
     this.items.length = 0;
     for (const decal of this.decals) decal.destroy();
     this.decals.length = 0;

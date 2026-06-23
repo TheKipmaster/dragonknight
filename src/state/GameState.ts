@@ -25,6 +25,10 @@ export interface DungeonProgress {
   /** Persistent ids of Traps already sprung — they rebuild revealed (but live)
    *  instead of getting their hidden first-strike again (ADR 0003 amendment). */
   trapsSprung: Set<string>;
+  /** Persistent ids of once-only Tripwires already fired — they never fire again,
+   *  surviving Room teardown and the respawn loop (ADR 0010; `repeat` Tripwires
+   *  are not recorded here). */
+  tripwiresFired: Set<string>;
 }
 
 export const GameState = {
@@ -40,6 +44,7 @@ export const GameState = {
     doorsOpened: new Set<string>(),
     itemsTaken: new Set<string>(),
     trapsSprung: new Set<string>(),
+    tripwiresFired: new Set<string>(),
   } as DungeonProgress,
 };
 

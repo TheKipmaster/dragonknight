@@ -134,6 +134,48 @@ try {
           `killed a Walker, and gated the re-hit`,
       );
     }
+
+    // ── Behavioural assertion: a Tripwire fires its handler once (ADR 0010) ───
+    // Drives the real path on the map-authored 'aggro' Tripwire in `entrance`:
+    // edge detection → registry dispatch → central once-guard → the 'aggro'
+    // handler waking a dormant Enemy. Uses a fresh Walker we force dormant so the
+    // result doesn't depend on the map Enemies' aggro state during boot.
+    const tw = await page.evaluate(() => {
+      const scene = window.__GAME.scene.getScene('Game');
+      const runtimes = scene.tripwireRuntimes;
+      if (!runtimes || runtimes.length < 1) return { error: 'no Tripwire built from the map' };
+
+      scene.spawnWalker();
+      const w = scene.hostiles.getChildren().at(-1);
+      w.ai.change('inactive');
+      const before = w.ai.state;
+
+      const firedBefore = window.__STATE.progress.tripwiresFired.size;
+      const rt = runtimes[0];
+      rt.notifyOverlap(); // enter the zone → outside→inside edge → fire
+      rt.update();
+      const after = w.ai.state;
+
+      // Leave (a frame with no overlap) then re-enter: a once Tripwire is a
+      // guarded no-op the second time — it must not throw or re-grow the set.
+      rt.update();
+      rt.notifyOverlap();
+      rt.update();
+
+      return { before, after, firedBefore, firedAfter: window.__STATE.progress.tripwiresFired.size };
+    });
+
+    if (tw.error) {
+      errors.push(tw.error);
+    } else if (tw.before !== 'inactive') {
+      errors.push(`Tripwire test Walker should start dormant, was '${tw.before}'`);
+    } else if (tw.after !== 'chase') {
+      errors.push(`'aggro' Tripwire should wake the Walker into 'chase', got '${tw.after}'`);
+    } else if (tw.firedAfter !== tw.firedBefore + 1) {
+      errors.push(`once Tripwire should record exactly one fire (${tw.firedBefore}→${tw.firedAfter})`);
+    } else {
+      console.log("behaviour OK — 'aggro' Tripwire woke a dormant Walker once and stayed fired");
+    }
   }
 } catch (err) {
   if (/Executable doesn't exist|playwright install/i.test(String(err?.message))) {

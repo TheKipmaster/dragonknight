@@ -8,12 +8,16 @@ import { Key } from '../entities/Key';
 import { RoomManager } from '../world/RoomManager';
 import { Switch } from '../world/Switch';
 import { Trap } from '../world/Trap';
+import { Tripwire } from '../world/Tripwire';
 import { TrickleSpawner } from '../world/TrickleSpawner';
 import { FlowField } from '../components/FlowField';
+import { isActivatable } from '../components/Activatable';
 import { PathfindingDebug } from '../debug/PathfindingDebug';
 import type { Room } from '../world/Room';
 import { GameState } from '../state/GameState';
 import { eventBus, GameEvent } from '../state/eventBus';
+import { tripwires } from '../state/tripwires';
+import type { TripwireSpawn } from '../world/Room';
 import { isContactAttacker } from '../combat/Attack';
 import { CORRIDOR, DECAL_DEPTH, SPAWN_SWITCH, SPLAT, TEX, TILE, TRAP } from '../config/constants';
 
@@ -51,6 +55,12 @@ export class GameScene extends Phaser.Scene {
    *  (a persistent group with two standing overlaps, members swapped per Room). */
   private trapZones!: Phaser.GameObjects.Group;
   private traps: Trap[] = [];
+
+  /** The active Room's Tripwire runtimes (edge detection) and their Player
+   *  overlaps (ADR 0010). Their zones are Room-owned; these are torn down per
+   *  Room in clearContent(). Handlers register once in create(), not per Room. */
+  private tripwireRuntimes: Tripwire[] = [];
+  private tripwireOverlaps: Phaser.Physics.Arcade.Collider[] = [];
 
   /** Shared enemy pathfinding for the active Room: one BFS distance map from the
    *  Player serves the whole hostile swarm. Rebuilt per Room, re-aimed per frame. */
@@ -91,6 +101,11 @@ export class GameScene extends Phaser.Scene {
 
     this.pathDebug = new PathfindingDebug(this);
 
+    // Bind Tripwire behaviours once (ADR 0010). Handlers close over the
+    // persistent groups/Player, which outlive Room transitions, so they need no
+    // per-Room re-registration; the per-Room part is just wiring zone overlaps.
+    this.registerTripwires();
+
     this.manager = new RoomManager(this, this.player, {
       onEnter: (room, fromSpawn) => this.populate(room, fromSpawn),
       onExit: () => this.clearContent(),
@@ -102,6 +117,7 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       eventBus.off(GameEvent.PlayerDied, this.onPlayerDied, this);
       eventBus.off(GameEvent.EnemyDied, this.onEnemyDied, this);
+      tripwires.clear(); // handlers close over this scene; a restart re-registers
     });
   }
 
@@ -113,6 +129,7 @@ export class GameScene extends Phaser.Scene {
     for (const spawner of this.spawners) spawner.update(time);
     this.corridorWalkers?.update(time);
     for (const trap of this.traps) trap.update(time);
+    for (const tw of this.tripwireRuntimes) tw.update();
     this.pathDebug.update();
   }
 
@@ -142,6 +159,10 @@ export class GameScene extends Phaser.Scene {
 
     // Build map-authored Spawner nests (ADR 0009).
     for (const s of room.spawners) this.addSpawner(room, s);
+
+    // Wire map-authored Tripwires (ADR 0010): an overlap per Room-owned zone that
+    // drives its edge-detecting runtime; behaviour was bound once in create().
+    for (const tw of room.tripwires) this.addTripwire(tw);
 
     // Spawn map-authored items, skipping any already collected (they don't respawn).
     for (const item of room.items) {
@@ -184,6 +205,11 @@ export class GameScene extends Phaser.Scene {
     // trapZones on destroy); the two standing overlaps survive for the next Room.
     for (const trap of this.traps) trap.destroy();
     this.traps.length = 0;
+    // Drop the Tripwire overlaps and runtimes; their zones are Room-owned and torn
+    // down by Room.deactivate() (ADR 0010). Handlers persist (registered once).
+    for (const overlap of this.tripwireOverlaps) overlap.destroy();
+    this.tripwireOverlaps.length = 0;
+    this.tripwireRuntimes.length = 0;
     // Its posted Walker is in the groups cleared above; just drop the post.
     this.corridorWalkers = undefined;
   }
@@ -242,6 +268,41 @@ export class GameScene extends Phaser.Scene {
     const body = spawner.body as Phaser.Physics.Arcade.StaticBody;
     this.nav.blockRect(body.left, body.top, body.right, body.bottom);
     this.spawners.push(spawner);
+  }
+
+  /** Wire one map-authored Tripwire (ADR 0010): an edge-detecting runtime fed by
+   *  a Player overlap on its Room-owned zone. Dispatch and the central once-guard
+   *  live in the `tripwires` registry; this only routes the crossing to it. */
+  private addTripwire(tw: TripwireSpawn): void {
+    const runtime = new Tripwire(
+      tw.name,
+      { id: tw.id, repeat: tw.repeat, region: tw.region, props: tw.props },
+      (name, ctx) => tripwires.fire(name, ctx),
+    );
+    this.tripwireRuntimes.push(runtime);
+    this.tripwireOverlaps.push(
+      this.physics.add.overlap(this.player, tw.zone, () => runtime.notifyOverlap()),
+    );
+  }
+
+  /** Bind the behaviour for each Tripwire name (ADR 0010). Handlers are closures
+   *  over this scene's persistent state, so they reach the Player, the entity
+   *  groups, and spawnEnemy() directly; the fire-time context carries only the
+   *  per-instance `region`/`props`. Registered once (see create()). */
+  private registerTripwires(): void {
+    // 'aggro': wake every Enemy in the active Room — the dormant-ambush pattern,
+    // the "change enemy AI" use case. Room-scoped: `hostiles` holds only the
+    // active Room's Enemies (swapped per Room), so this never reaches elsewhere.
+    tripwires.on('aggro', () => {
+      for (const h of this.hostiles.getChildren()) if (isActivatable(h)) h.wake();
+    });
+
+    // 'boss-fight' (sanctum): authored ahead of its system. Registered as a no-op
+    // placeholder so crossing it stays silent rather than firing the registry's
+    // "no handler" warning; replace this body once the boss encounter / Cutscene
+    // director lands (ADR 0010, and the Cutscene work in ADR 0006 / ROADMAP).
+    // TODO(boss-fight): play the boss-intro Cutscene and start the encounter.
+    tripwires.on('boss-fight', () => {});
   }
 
   /** The debug Room's iteration rig: dummies, a Charger, and a Walker spawner. */

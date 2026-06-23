@@ -83,6 +83,18 @@
                  "width":0,
                  "x":160,
                  "y":160
+                }, 
+                {
+                 "height":70.2524698133919,
+                 "id":6,
+                 "name":"boss-fight",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"tripwire",
+                 "visible":true,
+                 "width":71.7314691778843,
+                 "x":123.49644693512,
+                 "y":124.975446299613
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -91,7 +103,7 @@
          "y":0
         }],
  "nextlayerid":4,
- "nextobjectid":4,
+ "nextobjectid":7,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2-2-geb83ddb9",

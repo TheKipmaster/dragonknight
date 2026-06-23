@@ -19,6 +19,11 @@ _Ambient_ (the Player's short in-world monologues) leaves gameplay running. Both
 **dedicated advance key**, distinct from move/attack, so ambient lines can advance while the
 Player is mid-fight without firing a swing.
 
+**Amendment (Tripwires, ADR 0010).** The "map-authored trigger Zones" below are realized by the
+**Tripwire** mechanism (ADR 0010): the director and Dialogue system are ordinary Tripwire handlers,
+and the once-only "seen" tracking moves *out* of the director into Tripwire's central
+progress-backed guard. Modality (pausing `Game`, locking the Player) stays the handler's job.
+
 **Cutscenes are a lean in-world director, not a scripting engine.** A Cutscene is a
 Player-locked timeline played _over the active `Game` scene_ by a director with a bounded
 verb set: show modal Dialogue, pan/focus the camera, move/spawn an entity, wait, and fire a

@@ -4,6 +4,7 @@ import { Health } from '../components/Health';
 import { Knockback } from '../components/Knockback';
 import { AIController } from '../components/AIController';
 import { inactiveState } from '../components/aggro';
+import type { Activatable } from '../components/Activatable';
 import type { Navigator } from '../components/FlowField';
 import type { Attack, ContactAttacker, Damageable } from '../combat/Attack';
 import { eventBus, GameEvent } from '../state/eventBus';
@@ -18,7 +19,7 @@ import { eventBus, GameEvent } from '../state/eventBus';
  */
 export class Walker
   extends Phaser.Physics.Arcade.Sprite
-  implements Damageable, ContactAttacker
+  implements Damageable, ContactAttacker, Activatable
 {
   private readonly health: Health;
   private readonly knockback: Knockback;
@@ -74,6 +75,13 @@ export class Walker
     }
     const angle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
     this.setVelocity(Math.cos(angle) * WALKER.speed, Math.sin(angle) * WALKER.speed);
+  }
+
+  /** Activatable: wake from `inactive` straight into the chase, ignoring aggro
+   *  range (a Tripwire woke us deliberately, ADR 0010). Only acts on a dormant
+   *  Walker, so a hurt/chasing one is left to its own FSM. */
+  wake(): void {
+    if (this.ai.state === 'inactive') this.ai.change('chase');
   }
 
   /** Damageable: take a hit from the Player's sword. */

@@ -8,8 +8,7 @@ _Status as of 2026-06-22._
 
 ## MVP goal
 
-A playable **vertical slice**: the first Dungeon, with every system represented
-once and nothing more. It must prove the whole loop end to end, not be content-complete.
+A playable **vertical slice**: the first Dungeon, with every system represented once and nothing more. It must prove the whole loop end to end, not be content-complete.
 
 ### The slice
 
@@ -61,10 +60,8 @@ inventory UI · more than two enemy types · gamepad input.
 - [x] Headless smoke test (boot + behavioural assertion)
 - [x] **Tiled Room(s) + Door transitions** — replace the placeholder Room; exercise the Room lifecycle (ADR 0001) for real (collision contract + RoomManager: ADR 0005)
 - [x] **Key + locked Door** — the progression gate (map-authored lock/key; persistent in `GameState.progress`)
-- [x] **Smarter enemies (pathfinding)** — enemies route around walls on a shared flow field
-      (one weighted-Dijkstra flood from the Player serves the swarm, with a wall-clearance
-      penalty so paths swing wide of corners; ADR 0007). Governs approach/chase only; the
-      Charger's committed lunge stays a straight line. Includes a 'P'-toggle debug overlay.
+- [x] **Smarter enemies (pathfinding)** — enemies route around walls on a shared flow field(one weighted-Dijkstra flood from the Player serves the swarm, with a wall-clearance penalty so paths swing wide of corners; ADR 0007). Governs approach/chase only; the Charger's committed lunge stays a straight line. Includes a 'P'-toggle debug overlay.
+- [x] **Tripwires** — map-authored invisible regions (`type: 'tripwire'`, name in `obj.name`) that run an authored behaviour when the Player crosses in (CONTEXT.md; ADR 0010). One generic parser branch serves every behaviour; what each does is bound by name to a single-handler code callback in a dedicated **command registry**, deliberately distinct from the notification `eventBus` (ADR 0003). Once-ever by default, guarded centrally in `GameState.progress.tripwiresFired` (`repeat:true` opts into every-crossing); the `aggro` handler wakes a Room's dormant Enemies via `Activatable`. Realizes the **trigger-region** half the **Cutscenes** item below needs — the director/Dialogue become ordinary handlers.
 
 ### Remaining for the MVP
 

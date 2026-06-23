@@ -141,6 +141,18 @@
                  "type":"enemy",
                  "x":226,
                  "y":191
+                }, 
+                {
+                 "height":18,
+                 "id":19,
+                 "name":"aggro",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"tripwire",
+                 "visible":true,
+                 "width":289,
+                 "x":16,
+                 "y":238
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -149,7 +161,7 @@
          "y":0
         }],
  "nextlayerid":4,
- "nextobjectid":17,
+ "nextobjectid":20,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2-2-geb83ddb9",
