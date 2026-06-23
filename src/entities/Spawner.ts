@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { SPAWNER, TEX, TILE } from '../config/constants';
 import { Health } from '../components/Health';
+import { withinAggro } from '../components/aggro';
+import type { Navigator } from '../components/FlowField';
 import type { Room } from '../world/Room';
 import type { Attack, Damageable } from '../combat/Attack';
 import { eventBus, GameEvent } from '../state/eventBus';
@@ -81,6 +83,7 @@ export class Spawner
     private readonly target: Phaser.GameObjects.Sprite,
     private readonly room: Room,
     private readonly config: SpawnerConfig,
+    private readonly nav: Navigator,
     private readonly spawn: SpawnFn,
   ) {
     super(scene, x, y, TEX.spawner);
@@ -94,9 +97,9 @@ export class Spawner
   update(now: number): void {
     if (this.dead) return;
 
-    const inRange =
-      Phaser.Math.Distance.Between(this.x, this.y, this.target.x, this.target.y) <=
-      this.config.aggroRange;
+    // Wall-aware: a Player on the far side of a wall won't wake the nest, even
+    // when within straight-line range (ADR 0007). Shared with the mobile enemies.
+    const inRange = withinAggro(this.nav, this.x, this.y, this.target, this.config.aggroRange);
 
     if (this.phase === 'dormant') {
       if (inRange) this.beginTelegraph(now); // wake → telegraph a Wave immediately

@@ -6,6 +6,17 @@ export const TILE = 16;
 export const VIEW_WIDTH = 320;
 export const VIEW_HEIGHT = 240;
 
+/**
+ * Aggro wall gate (ADR 0007). An enemy wakes only when the Player is both within
+ * its straight-line `aggroRange` *and* reachable by a routed path no longer than
+ * this multiple of that straight line — so a Player on the far side of a wall
+ * (path much longer than the line of sight, or none at all) won't wake it
+ * through the wall. Generous enough to tolerate the flow field's clearance
+ * weighting (paths bow off walls, reading a little long) and honest detours
+ * around corners; tight enough to reject the other side of a thin wall.
+ */
+export const AGGRO_PATH_RATIO = 1.6;
+
 /** Player movement and damage-response tuning. */
 export const PLAYER = {
   speed: 90, //          movement speed (px/s)

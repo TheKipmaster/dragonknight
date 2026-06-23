@@ -66,7 +66,7 @@ export class Charger
     this.knockback = new Knockback(this);
 
     this.ai = new AIController()
-      .add('inactive', inactiveState(this, target, CHARGER.aggroRange, () => this.ai.change('chase')))
+      .add('inactive', inactiveState(this, target, CHARGER.aggroRange, nav, () => this.ai.change('chase')))
       .add('chase', { update: () => this.chase() })
       .add('windup', {
         enter: () => this.beginWindup(),

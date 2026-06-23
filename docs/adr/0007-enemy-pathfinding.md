@@ -105,3 +105,26 @@ extra public surface.
 
 A future line-of-sight feature can layer on top: steer straight when the Player is visible, follow
 the field when not — the `Navigator` seam already isolates that decision from the enemy FSMs.
+
+## Amendment — aggro reads the field's routed distance
+
+The original decision left proximity aggro "unchanged" (range-only straight-line distance), with
+wall-aware waking deferred. That gap let an enemy wake through a wall: a Player within straight-line
+`aggroRange` but on the far side of a wall would aggro despite having no line of sight.
+
+We close it using the field already built here, no new perception system. The `Navigator` gains
+`pathDistance(x, y)` — the routed cost to the target read back out in pixels (the flood's value at
+the cell, ÷ `STEP_ORTHO` × `tile`). An enemy now wakes only when the Player is within straight-line
+`aggroRange` **and** the routed path is reachable and no longer than `AGGRO_PATH_RATIO`× (≈1.6) the
+straight line. A target across a wall is unreachable or a long way round, so it fails the second
+gate. The straight-line pre-check is kept, not subsumed: the flood is weighted (paths bow off
+walls), so a pure path threshold would clip the effective range inconsistently near walls.
+
+The test lives in one helper, `withinAggro` (`components/aggro.ts`), shared by the Walker/Charger
+`inactiveState` and the stationary Spawner's proximity gate — one definition of "near, around the
+walls." Because the Spawner stamps its own footprint solid (so the flood never reaches its centre
+cell), `pathDistance` falls back to the nearest reachable neighbour — the distance to its doorstep.
+
+This is geometry-distance line-of-sight, not the true raycast still sketched above; that stays
+deferred. It's a strict tightening — enemies wake in a subset of the cases they used to — so it
+needs no new tuning beyond the one ratio.

@@ -44,7 +44,7 @@ export class Walker
     this.knockback = new Knockback(this);
 
     this.ai = new AIController()
-      .add('inactive', inactiveState(this, target, ENEMY.aggroRange, () => this.ai.change('chase')))
+      .add('inactive', inactiveState(this, target, ENEMY.aggroRange, nav, () => this.ai.change('chase')))
       .add('chase', { update: () => this.chase() })
       .add('hurt', {
         update: () => {

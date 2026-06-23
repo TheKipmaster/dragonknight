@@ -185,7 +185,7 @@ export class GameScene extends Phaser.Scene {
    *  sword fells it; never in `hostiles` (it deals no contact damage). Its Wave
    *  members spawn through the shared spawnEnemy() path. */
   private addSpawner(room: Room, s: import('../world/Room').SpawnerSpawn): void {
-    const spawner = new Spawner(this, s.x, s.y, this.player, room, s, (kind, sx, sy) =>
+    const spawner = new Spawner(this, s.x, s.y, this.player, room, s, this.nav, (kind, sx, sy) =>
       this.spawnEnemy(kind, sx, sy),
     );
     this.attackables.add(spawner);

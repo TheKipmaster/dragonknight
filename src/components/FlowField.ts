@@ -29,6 +29,16 @@ export interface Navigator {
    * read it immediately, don't retain it.
    */
   steer(x: number, y: number): Phaser.Math.Vector2 | null;
+
+  /**
+   * The routed distance from world point (x, y) to the current target, in
+   * pixels — the length of the path *around* walls, not the straight line.
+   * Returns null when the point is off-grid or no route exists. Lets a caller
+   * tell "near as the crow flies" from "near to actually walk to" (e.g. aggro
+   * that won't fire through a wall). Weighted: the value runs a little long near
+   * walls, since the flood biases paths into the open (see clearance penalty).
+   */
+  pathDistance(x: number, y: number): number | null;
 }
 
 /** Integer step costs (scaled so a diagonal ≈ √2 orthogonals). */
@@ -118,6 +128,34 @@ export class FlowField implements Navigator {
   /** Does a route to the current target exist from this cell? */
   reachable(col: number, row: number): boolean {
     return this.inBounds(col, row) && this.dist[row * this.grid.cols + col] < UNREACHED;
+  }
+
+  /** Navigator: routed distance to the target in pixels, or null if off-grid or
+   *  unreachable. The flood's integer cost is in STEP_ORTHO-per-cell units, so
+   *  convert back to pixels (cells × tile). Weighted by the clearance penalty,
+   *  so it reads a little long near walls — fine for the "around a wall vs.
+   *  through it" comparison it exists for. */
+  pathDistance(x: number, y: number): number | null {
+    const { cols, tile } = this.grid;
+    const col = Math.floor(x / tile);
+    const row = Math.floor(y / tile);
+    if (!this.inBounds(col, row)) return null;
+    let d = this.dist[row * cols + col];
+    // A query point inside a solid cell has no flood value of its own — e.g. the
+    // Spawner stamps its own footprint solid, so the flood never reaches its
+    // centre. Fall back to its nearest reachable neighbour: the distance to its
+    // doorstep. (Mobile enemies stand on walkable cells and skip this.)
+    if (d >= UNREACHED) {
+      for (const [dc, dr] of NEIGHBOURS) {
+        const nc = col + dc;
+        const nr = row + dr;
+        if (!this.inBounds(nc, nr)) continue;
+        const nd = this.dist[nr * cols + nc];
+        if (nd < d) d = nd;
+      }
+      if (d >= UNREACHED) return null;
+    }
+    return (d / STEP_ORTHO) * tile;
   }
 
   /**
