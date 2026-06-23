@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object name="spawner" type="spawner">
+  <properties>
+   <property name="aggroRange" type="int" value="150"/>
+   <property name="intervalMs" type="int" value="4000"/>
+   <property name="maxHp" type="int" value="45"/>
+   <property name="maxLiveChildren" type="int" value="6"/>
+   <property name="telegraphMs" type="int" value="850"/>
+  </properties>
+  <point/>
+ </object>
+</template>

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE, TEX, DECALS, SPLAT, TRAP } from '../config/constants';
+import { TILE, TEX, DECALS, SPLAT, TRAP, SPAWNER } from '../config/constants';
 import { ROOM_IDS } from '../world/rooms';
 import {
   collectTemplateNames,
@@ -41,9 +41,11 @@ export class PreloadScene extends Phaser.Scene {
     this.makeRect(TEX.dummy, TILE, TILE, 0xc9a04e, 0x7a5e23);
     this.makeRect(TEX.walker, TILE, TILE, 0xd64550, 0x7a1f29);
     this.makeRect(TEX.charger, TILE, TILE, 0xb05cf0, 0x5a2080);
+    this.makeRect(TEX.spawner, TILE, TILE, 0x8a2f4f, 0x3a0f1f); // fleshy nest maroon
     this.makeRect(TEX.key, 10, 12, 0xffd34d, 0x8a6a12);
     this.makeSplat();
     this.makeGlyph();
+    this.makeSpawnMark();
 
     // Phaser doesn't expand Tiled object templates; resolve them before any
     // Room is built (see tiledTemplates.ts), then enter the game.
@@ -150,6 +152,23 @@ export class PreloadScene extends Phaser.Scene {
       );
     }
     g.generateTexture(TEX.trap, s, s);
+    g.destroy();
+  }
+
+  /**
+   * Generate the Spawner's incoming-spawn telegraph reticle: a ring with a centre
+   * dot, baked white so the Spawner can tint it (SPAWNER.markColor) and pulse its
+   * alpha/scale to read as a building threat. One texture serves every marker.
+   */
+  private makeSpawnMark(): void {
+    const s = SPAWNER.markSize;
+    const c = s / 2;
+    const g = this.add.graphics();
+    g.lineStyle(2, 0xffffff, 1);
+    g.strokeCircle(c, c, c - 1);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(c, c, 2);
+    g.generateTexture(TEX.spawnMark, s, s);
     g.destroy();
   }
 }

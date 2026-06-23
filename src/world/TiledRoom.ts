@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { DECALS, DECAL_DEPTH, TEX, TILE, TILESET_NAME, TRAP } from '../config/constants';
-import type { DoorTrigger, EnemySpawn, ItemSpawn, Room, TrapSpawn } from './Room';
+import { DECALS, DECAL_DEPTH, SPAWNER, TEX, TILE, TILESET_NAME, TRAP } from '../config/constants';
+import type { DoorTrigger, EnemySpawn, ItemSpawn, Room, SpawnerSpawn, TrapSpawn } from './Room';
 import type { NavGrid } from '../components/FlowField';
 
 /**
@@ -31,6 +31,7 @@ export class TiledRoom implements Room {
   readonly items: ItemSpawn[] = [];
   readonly enemies: EnemySpawn[] = [];
   readonly traps: TrapSpawn[] = [];
+  readonly spawners: SpawnerSpawn[] = [];
 
   private map?: Phaser.Tilemaps.Tilemap;
   private layers: Phaser.Tilemaps.TilemapLayer[] = [];
@@ -93,7 +94,9 @@ export class TiledRoom implements Room {
     this.spawns.clear();
     this.doors.length = 0;
     this.items.length = 0;
+    this.enemies.length = 0;
     this.traps.length = 0;
+    this.spawners.length = 0;
     const objects = map.getObjectLayer('objects')?.objects ?? [];
 
     for (const obj of objects) {
@@ -139,6 +142,22 @@ export class TiledRoom implements Room {
           lethal: p.lethal != null ? p.lethal === 'true' : TRAP.lethal,
           rearmMs: p.rearmMs != null ? Number(p.rearmMs) : TRAP.rearmMs,
           knockback: p.knockback != null ? Number(p.knockback) : TRAP.knockback,
+        });
+      } else if (obj.point && obj.type === 'spawner') {
+        // A destroyable nest (ADR 0009). Zero properties = the SPAWNER defaults;
+        // any camelCase prop overrides one scalar (wave recipes/ring stay global).
+        // Values arrive as strings (see props()), so coerce the numbers.
+        const p = this.props(obj);
+        this.spawners.push({
+          id: `${this.id}#${obj.id}`,
+          x,
+          y,
+          maxHp: p.maxHp != null ? Number(p.maxHp) : SPAWNER.maxHp,
+          aggroRange: p.aggroRange != null ? Number(p.aggroRange) : SPAWNER.aggroRange,
+          intervalMs: p.intervalMs != null ? Number(p.intervalMs) : SPAWNER.intervalMs,
+          telegraphMs: p.telegraphMs != null ? Number(p.telegraphMs) : SPAWNER.telegraphMs,
+          maxLiveChildren:
+            p.maxLiveChildren != null ? Number(p.maxLiveChildren) : SPAWNER.maxLiveChildren,
         });
       } else if (obj.point && obj.name && obj.name in DECALS) {
         // A floor decal: the marker name is the texture key (see DECALS). Centred

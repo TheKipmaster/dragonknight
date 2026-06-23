@@ -36,13 +36,6 @@
          "name":"objects",
          "objects":[
                 {
-                 "id":1,
-                 "name":"corpse-pile",
-                 "template":"..\/templates\/decal.tx",
-                 "x":241.333333333333,
-                 "y":61.3333333333333
-                }, 
-                {
                  "id":2,
                  "properties":[
                         {
@@ -126,6 +119,26 @@
                  "template":"..\/templates\/charger.tx",
                  "x":484,
                  "y":226.666666666667
+                }, 
+                {
+                 "id":14,
+                 "template":"..\/templates\/walker.tx",
+                 "x":206.666666666667,
+                 "y":96.6666666666667
+                }, 
+                {
+                 "id":15,
+                 "template":"..\/templates\/walker.tx",
+                 "x":258,
+                 "y":96
+                }, 
+                {
+                 "id":16,
+                 "name":"corpse-pile",
+                 "template":"..\/templates\/spawner.tx",
+                 "type":"spawner",
+                 "x":234.666666666667,
+                 "y":58
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -134,7 +147,7 @@
          "y":0
         }],
  "nextlayerid":4,
- "nextobjectid":13,
+ "nextobjectid":17,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2-2-geb83ddb9",

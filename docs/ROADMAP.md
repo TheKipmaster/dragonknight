@@ -143,7 +143,7 @@ Things raised during the build and consciously deferred — not forgotten.
   lose them when sight breaks), instead of proximity aggro. A stealthier feel; deferred
   out of the pathfinding item to keep that one about geometry, not perception.
 - **Gamepad input** — keyboard + mouse only for the MVP, behind an input-mapping indirection later.
-- **Split the `Switch` term** — _partially resolved._ The hazard half is now its own **Trap**
-  concept (CONTEXT.md, ADR 0008) — a hidden, victim-harming floor glyph, distinct from the
-  deliberate world-changing Switch. Still open: rename the spawner-flavoured Switch to a
-  distinct **Spawner** term if that overload keeps chafing.
+- **Split the `Switch` term** — _resolved._ The hazard half became its own **Trap** concept
+  (CONTEXT.md, ADR 0008) — a hidden, victim-harming floor glyph. The spawner half is now the
+  distinct **Spawner** entity (CONTEXT.md, ADR 0009) — a destroyable, autonomous nest — separate
+  from the Switch's Player-triggered spawn effect, which stays a Switch effect.

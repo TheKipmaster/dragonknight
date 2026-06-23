@@ -56,6 +56,28 @@ export interface TrapSpawn {
 }
 
 /**
+ * A Spawner to build when the Room activates (CONTEXT.md; ADR 0009). Carries its
+ * resolved per-Spawner config: the SPAWNER defaults, with any Tiled
+ * custom-property overrides already applied by TiledRoom. The scene builds the
+ * live Spawner (its wave recipes and ring geometry stay global in SPAWNER).
+ */
+export interface SpawnerSpawn {
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  /** Hit points; destroying them stops it for good. */
+  readonly maxHp: number;
+  /** Dormant until the Player comes within this distance (px). */
+  readonly aggroRange: number;
+  /** Cadence between Wave spawns, pop-to-pop (ms). */
+  readonly intervalMs: number;
+  /** Lead/reaction window a Wave is previewed before it pops (ms). */
+  readonly telegraphMs: number;
+  /** Skip cycles while this many of its own spawn are alive. */
+  readonly maxLiveChildren: number;
+}
+
+/**
  * The Room lifecycle seam (ADR 0001).
  *
  * Loading is split into two costs that stay separate: asset I/O (expensive,
@@ -84,6 +106,9 @@ export interface Room {
 
   /** Trap spawns parsed from the map's object layer (ADR 0008). */
   readonly traps: readonly TrapSpawn[];
+
+  /** Spawner spawns parsed from the map's object layer (ADR 0009). */
+  readonly spawners: readonly SpawnerSpawn[];
 
   /** Look up a named spawn marker (e.g. a door's targetSpawn). */
   spawnAt(name: string): Phaser.Math.Vector2 | undefined;

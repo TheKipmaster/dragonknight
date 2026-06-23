@@ -3,6 +3,7 @@ import { Player } from '../entities/Player';
 import { PracticeDummy } from '../entities/PracticeDummy';
 import { Walker } from '../entities/Walker';
 import { Charger } from '../entities/Charger';
+import { Spawner } from '../entities/Spawner';
 import { Key } from '../entities/Key';
 import { RoomManager } from '../world/RoomManager';
 import { Switch } from '../world/Switch';
@@ -13,7 +14,7 @@ import type { Room } from '../world/Room';
 import { GameState } from '../state/GameState';
 import { eventBus, GameEvent } from '../state/eventBus';
 import { isContactAttacker } from '../combat/Attack';
-import { DECAL_DEPTH, SPAWNER, SPLAT, TEX, TILE, TRAP } from '../config/constants';
+import { DECAL_DEPTH, SPAWN_SWITCH, SPLAT, TEX, TILE, TRAP } from '../config/constants';
 
 /**
  * Gameplay scene. A RoomManager owns the active Room and drives transitions
@@ -37,6 +38,9 @@ export class GameScene extends Phaser.Scene {
 
   private spawnSwitch?: Switch;
   private switchOverlap?: Phaser.Physics.Arcade.Collider;
+
+  /** The active Room's destroyable Spawner nests (ADR 0009), map-authored. */
+  private spawners: Spawner[] = [];
 
   /** Live Traps in the active Room; their overlap zones live in `trapZones`
    *  (a persistent group with two standing overlaps, members swapped per Room). */
@@ -101,6 +105,7 @@ export class GameScene extends Phaser.Scene {
     // the Player crossed into a new cell, so the BFS only runs when needed.
     this.nav.retarget(this.player.x, this.player.y);
     this.spawnSwitch?.update(time);
+    for (const spawner of this.spawners) spawner.update(time);
     for (const trap of this.traps) trap.update(time);
     this.pathDebug.update();
   }
@@ -113,18 +118,14 @@ export class GameScene extends Phaser.Scene {
     // One flow field per Room (walls are static); enemies share it for chasing.
     this.nav = new FlowField(room.buildNavGrid());
 
-    for (const e of room.enemies) {
-      const enemy = e.kind === 'charger'
-        ? new Charger(this, e.x, e.y, this.player, this.nav)
-        : new Walker(this, e.x, e.y, this.player, this.nav);
-      
-      this.attackables.add(enemy);
-      this.hostiles.add(enemy);
-    }
+    for (const e of room.enemies) this.spawnEnemy(e.kind, e.x, e.y);
 
     // Build map-authored Traps. A Trap sprung on a previous visit rebuilds
     // revealed-but-live (its id is remembered in progress; ADR 0003 amendment).
     for (const t of room.traps) this.addTrap(t.x, t.y, t, t.id);
+
+    // Build map-authored Spawner nests (ADR 0009).
+    for (const s of room.spawners) this.addSpawner(room, s);
 
     // Spawn map-authored items, skipping any already collected (they don't respawn).
     for (const item of room.items) {
@@ -155,6 +156,10 @@ export class GameScene extends Phaser.Scene {
     this.switchOverlap = undefined;
     this.spawnSwitch?.destroy();
     this.spawnSwitch = undefined;
+    // Spawners are in `attackables` (cleared above), but their standalone
+    // telegraph markers need their own destroy() to be torn down.
+    for (const spawner of this.spawners) spawner.destroy();
+    this.spawners.length = 0;
     // Destroying each Trap tears down its glyph and zone (the zone auto-leaves
     // trapZones on destroy); the two standing overlaps survive for the next Room.
     for (const trap of this.traps) trap.destroy();
@@ -173,6 +178,21 @@ export class GameScene extends Phaser.Scene {
     );
     this.traps.push(trap);
     this.trapZones.add(trap.zone);
+  }
+
+  /** Build a Spawner nest (ADR 0009): solid + flow-field-stamped like a dummy so
+   *  it blocks movement and Enemies route around it; in `attackables` so the
+   *  sword fells it; never in `hostiles` (it deals no contact damage). Its Wave
+   *  members spawn through the shared spawnEnemy() path. */
+  private addSpawner(room: Room, s: import('../world/Room').SpawnerSpawn): void {
+    const spawner = new Spawner(this, s.x, s.y, this.player, room, s, (kind, sx, sy) =>
+      this.spawnEnemy(kind, sx, sy),
+    );
+    this.attackables.add(spawner);
+    this.solids.add(spawner);
+    const body = spawner.body as Phaser.Physics.Arcade.StaticBody;
+    this.nav.blockRect(body.left, body.top, body.right, body.bottom);
+    this.spawners.push(spawner);
   }
 
   /** The debug Room's iteration rig: dummies, a Charger, and a Walker spawner. */
@@ -199,12 +219,15 @@ export class GameScene extends Phaser.Scene {
     this.hostiles.add(charger);
 
     // Spawner Switch: one Walker per interval while the Player stands on it.
-    this.spawnSwitch = new Switch(this, x, y - TILE * 3, SPAWNER.intervalMs, () =>
+    this.spawnSwitch = new Switch(this, x, y - TILE * 3, SPAWN_SWITCH.intervalMs, () =>
       this.spawnWalker(),
     );
     this.switchOverlap = this.physics.add.overlap(this.player, this.spawnSwitch.zone, () =>
       this.spawnSwitch?.notifyOverlap(),
     );
+
+    // The Spawner nest is now map-authored — see the `spawner` object in
+    // room-debug.tmj (built via populate()'s room.spawners loop, ADR 0009).
 
     // A demo Trap to iterate on feel (hidden until stepped on; lethal to Enemies
     // so the spawned Walkers can be lured onto it). Maps author their own via a
@@ -252,19 +275,29 @@ export class GameScene extends Phaser.Scene {
   private spawnWalker(): void {
     const room = this.manager.room;
     const { x: px, y: py } = this.player;
-    for (let i = 0; i < SPAWNER.attempts; i++) {
+    for (let i = 0; i < SPAWN_SWITCH.attempts; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const dist = Phaser.Math.Between(SPAWNER.minRadius, SPAWNER.maxRadius);
+      const dist = Phaser.Math.Between(SPAWN_SWITCH.minRadius, SPAWN_SWITCH.maxRadius);
       const x = Phaser.Math.Clamp(px + Math.cos(angle) * dist, TILE * 1.5, room.widthPx - TILE * 1.5);
       const y = Phaser.Math.Clamp(py + Math.sin(angle) * dist, TILE * 1.5, room.heightPx - TILE * 1.5);
       if (room.isSolidAt(x, y)) continue;
 
-      const walker = new Walker(this, x, y, this.player, this.nav);
-      this.attackables.add(walker);
-      this.hostiles.add(walker);
+      this.spawnEnemy('walker', x, y);
       return;
     }
     // No wall-free spot found this tick; skip silently.
+  }
+
+  /** Create an Enemy of `kind`, register it in the sword/contact groups, and
+   *  return it. Shared by map-authored placement, the Spawner nest, and the
+   *  Switch's spawn effect (via spawnWalker). */
+  private spawnEnemy(kind: string, x: number, y: number): Phaser.Physics.Arcade.Sprite {
+    const enemy = kind === 'charger'
+      ? new Charger(this, x, y, this.player, this.nav)
+      : new Walker(this, x, y, this.player, this.nav);
+    this.attackables.add(enemy);
+    this.hostiles.add(enemy);
+    return enemy;
   }
 
   /** An enemy died: drop a jittered floor splat under the floor's entities. */
@@ -283,6 +316,10 @@ export class GameScene extends Phaser.Scene {
     const spawn = this.manager.room.spawn;
     this.player.respawn(spawn.x, spawn.y);
     this.hostiles.clear(true, true); // destroy all live Walkers (and the Charger)
+    // Spawners aren't hostile (not in `hostiles`), so clear them explicitly —
+    // like the Charger, they stay gone until the Room rebuilds on re-entry.
+    for (const spawner of this.spawners) spawner.destroy();
+    this.spawners.length = 0;
     eventBus.emit(GameEvent.PlayerDamaged); // refresh HUD to full
   }
 }

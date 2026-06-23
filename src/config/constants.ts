@@ -27,6 +27,8 @@ export const TEX = {
   dummy: 'dummy',
   walker: 'walker',
   charger: 'charger',
+  spawner: 'spawner', // stationary destroyable nest (ADR 0009)
+  spawnMark: 'spawn-mark', // incoming-spawn telegraph reticle (tinted at runtime)
   key: 'key',
   splat: 'splat', //      death decal dropped where an enemy dies
   trap: 'trap', //        hidden magic-glyph hazard rune (tinted at runtime)
@@ -156,12 +158,45 @@ export const TRAP = {
   depth: -8, //          above floor/decals (-9/-10), below walls/entities (0+)
 } as const;
 
-/** ── Spawner Switch tuning ────────────────────────────────────────────────
+/** ── Spawn-Switch tuning ──────────────────────────────────────────────────
  *  A Switch that spawns one Walker every interval while the Player stands on
- *  it, at a random point in a ring around the Player. */
-export const SPAWNER = {
+ *  it, at a random point in a ring around the Player. Distinct from the SPAWNER
+ *  entity below (ADR 0009): this is the Player-triggered Switch effect. */
+export const SPAWN_SWITCH = {
   intervalMs: 3000, //   one spawn this often while pressed (first is immediate)
   minRadius: 64, //      nearest a Walker spawns to the Player (px) — react time
   maxRadius: 120, //     farthest a Walker spawns from the Player (px)
   attempts: 12, //       tries to find a wall-free spawn point before giving up
+} as const;
+
+/** ── Spawner entity tuning ────────────────────────────────────────────────
+ *  A stationary, destroyable nest (CONTEXT.md; ADR 0009). Once the Player comes
+ *  within `aggroRange` it telegraphs and conjures a Wave — a batch drawn at
+ *  random from `waves` — at wall-free points in a tight ring around *itself*,
+ *  then repeats on a `intervalMs` cadence (pop-to-pop). Each Wave is previewed
+ *  for `telegraphMs` (the reaction window) before it appears. Cycles never
+ *  overlap and skip while `maxLiveChildren` of its own spawn are still alive.
+ *  Destroying its `maxHp` stops it for good; its already-spawned Enemies remain. */
+export const SPAWNER = {
+  maxHp: 45, //          hit points; ~4–5 full combos (10 dmg each) to fell it
+  aggroRange: 150, //    dormant until the Player comes within this distance (px)
+  intervalMs: 4000, //   cadence between Wave spawns, pop-to-pop (ms)
+  telegraphMs: 850, //   lead/reaction window a Wave is previewed before it pops (ms)
+  minRadius: 24, //      nearest a Wave member spawns to the Spawner (px) — tight
+  maxRadius: 48, //      farthest a Wave member spawns from the Spawner (px)
+  attempts: 12, //       tries to find a wall-free point per member before skipping
+  maxLiveChildren: 6, // skip cycles while this many of its own spawn are alive
+
+  /** Wave recipes; one is chosen at random each cycle. Each entry is a list of
+   *  {kind, count} parts spawned together at their own telegraphed ring points. */
+  waves: [
+    [{ kind: 'walker', count: 3 }],
+    [{ kind: 'charger', count: 1 }],
+  ],
+
+  // Presentation — incoming-spawn telegraph markers + the nest's death.
+  markColor: 0xff5c5c, //warning hue for the floor markers (incoming spawn)
+  markSize: 14, //       generated marker reticle texture side (px)
+  markDepth: -8, //      above floor/decals, below walls/entities (like a Trap)
+  deathMs: 200, //       crumble tween duration on destruction (ms)
 } as const;

@@ -29,13 +29,21 @@ _Avoid_: Facing (movement and aim are separate; there is no single "facing").
 A hostile entity that damages the Player. Most Enemies deal damage on contact; at least one has a telegraphed attack (a visible wind-up before striking).
 _Avoid_: Monster, Mob, NPC (an NPC would be a *non-hostile* entity, a separate concept).
 
+**Spawner**:
+A stationary, destroyable entity that periodically conjures Enemies at telegraphed points around itself, and stops for good once its health is destroyed. Hostile-aligned but does not damage the Player itself — its threat is the Enemies it produces, making it a combat objective the Player can shut off at the source. An Enemy subtype in code (the sword hits it) but its own concept: it neither moves nor strikes.
+_Avoid_: Switch (a Switch's spawn effect is Player-triggered, healthless, and spawns around the *Player*; a Spawner is autonomous, destroyable, and spawns around *itself*), Nest, Totem, Portal, Summoner.
+
 **Heart**:
 The unit of the Player's health. Hearts are discrete and support half-Heart granularity. The Player dies when Hearts reach zero.
 _Avoid_: HP, Life, Hitpoints (the Player's health is always counted in Hearts).
 
 **Telegraph**:
-The visible wind-up an Enemy plays before executing an attack, giving the Player a window to react. A defining genre feel, not just an animation.
+The visible wind-up shown before a committed action — an Enemy's attack, or a Spawner's incoming spawn points — giving the Player a window to react. A defining genre feel, not just an animation.
 _Avoid_: Wind-up, Tell, Charge.
+
+**Wave**:
+The batch of Enemies a Spawner telegraphs and conjures in a single cycle, drawn at random from one of its configured recipes (e.g. three Walkers, or one Charger). All members of a Wave are telegraphed together and appear together; cycles never overlap.
+_Avoid_: Batch, Pack, Group (Group is the Phaser construct in code), Horde.
 
 ## Progression & Interaction
 
@@ -45,7 +53,7 @@ _Avoid_: Pass, Token.
 
 **Switch**:
 A floor trigger the Player activates by standing on it (or by a Block pushed onto it). Its effect is configurable: open a Door or path, or — while held down — spawn Enemies on a cadence. Changes appearance to show its pressed state.
-_Avoid_: Button, Pressure Plate, Plate, Lever (a Lever would be a separate hand-operated variant). A spawner is a Switch with a spawning effect, not a distinct term.
+_Avoid_: Button, Pressure Plate, Plate, Lever (a Lever would be a separate hand-operated variant). A Switch may *have* a spawning effect (Player-triggered, around the Player), but the destroyable autonomous **Spawner** entity is a distinct concept, not a Switch.
 
 **Trap**:
 A hostile floor hazard that lies hidden until an entity steps onto it, then springs — harming whoever tripped it. Unlike a Switch, it is invisible until sprung, triggered *incidentally* by any entity that walks over it (Enemies included, opening the option of luring them onto one), and its effect is to harm rather than change the world. Shares only the floor-overlap *mechanism* with a Switch, not the concept. It strikes instantly on contact — its flash is hit feedback, not a Telegraph; there is no reaction window (you cannot warn about a hazard you couldn't see). It is hidden only until its *first* spring; thereafter it stays permanently visible and re-arms on a cadence, so brightness reads its state — lit means live, dimmed means spent and safe. The first contact is the only free hit it gets; after that it is a readable timing hazard. Its bite is calibrated to its victim — a painful but survivable wound to the Player, typically lethal to an ordinary Enemy — so luring an Enemy onto one is a clean kill.
