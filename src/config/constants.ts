@@ -94,7 +94,7 @@ export const TILESET_NAME = 'stone';
 export const SWORD = {
   /** Damage per combo beat. The array length also defines the combo length,
    *  so beat count and damage curve can never drift apart. */
-  comboDamage: [2, 3, 5], //  beat 1 → 2, beat 2 → 3, beat 3 → 5
+  comboDamage: [2, 3, 5],
   knockback: 50, //     knockback impulse on hit (px/s)
   reach: 16, //          distance from Player centre to hitbox centre (px)
   radius: 11, //          hitbox circle radius (px)

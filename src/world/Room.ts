@@ -26,7 +26,7 @@ export interface ItemSpawn {
   readonly y: number;
 }
 export interface EnemySpawn {
-  /** Persistent id (`roomId#objectId`) so a collected item never respawns. */
+  /** Stable id (`roomId#objectId`); unused today — enemies respawn on re-entry. */
   readonly id: string;
   readonly kind: string;
   readonly x: number;

@@ -111,29 +111,29 @@
                  "id":12,
                  "template":"..\/templates\/walker.tx",
                  "type":"enemy",
-                 "x":86,
-                 "y":72
+                 "x":113,
+                 "y":93
                 }, 
                 {
                  "id":13,
                  "template":"..\/templates\/walker.tx",
                  "type":"enemy",
-                 "x":157,
-                 "y":157.5
+                 "x":149.5,
+                 "y":161.5
                 }, 
                 {
                  "id":14,
                  "template":"..\/templates\/walker.tx",
                  "type":"enemy",
-                 "x":64,
-                 "y":156
+                 "x":64.5,
+                 "y":172.5
                 }, 
                 {
                  "id":15,
                  "template":"..\/templates\/walker.tx",
                  "type":"enemy",
-                 "x":164.5,
-                 "y":85.5
+                 "x":191.5,
+                 "y":114
                 }, 
                 {
                  "id":16,

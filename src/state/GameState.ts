@@ -29,8 +29,8 @@ export interface DungeonProgress {
 
 export const GameState = {
   player: {
-    halfHearts: 6,
-    maxHalfHearts: 6,
+    halfHearts: 10,
+    maxHalfHearts: 10,
   } as PlayerState,
 
   activeRoomId: 'entrance',
