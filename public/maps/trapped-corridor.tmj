@@ -77,27 +77,27 @@
                         }],
                  "template":"..\/templates\/door.tx",
                  "x":160.445548558553,
-                 "y":224.068403720608
+                 "y":225.735070387275
                 }, 
                 {
                  "id":4,
                  "name":"from-sanctum",
                  "template":"..\/templates\/spawn.tx",
                  "x":169.042232364666,
-                 "y":119.521636143047
+                 "y":110.85496947638
                 }, 
                 {
                  "id":5,
                  "name":"from-corpse-pile",
                  "template":"..\/templates\/spawn.tx",
-                 "x":168.764919983823,
-                 "y":41.3195447455081
+                 "x":168.43158665049,
+                 "y":29.9862114121748
                 }, 
                 {
                  "id":6,
                  "template":"..\/templates\/spawn.tx",
-                 "x":167.876961888805,
-                 "y":212.998247539816
+                 "x":167.543628555472,
+                 "y":214.331580873149
                 }, 
                 {
                  "id":8,
@@ -113,8 +113,144 @@
                          "value":"from-corridor"
                         }],
                  "template":"..\/templates\/door.tx",
-                 "x":161.000173320238,
-                 "y":0
+                 "x":160.333506653571,
+                 "y":-2.66666666666667
+                }, 
+                {
+                 "id":10,
+                 "properties":[
+                        {
+                         "name":"enemyDamage",
+                         "type":"int",
+                         "value":5
+                        }, 
+                        {
+                         "name":"lethal",
+                         "type":"bool",
+                         "value":false
+                        }],
+                 "template":"..\/templates\/trap.tx",
+                 "x":169.666666666667,
+                 "y":68.3333333333333
+                }, 
+                {
+                 "id":21,
+                 "properties":[
+                        {
+                         "name":"enemyDamage",
+                         "type":"int",
+                         "value":5
+                        }, 
+                        {
+                         "name":"lethal",
+                         "type":"bool",
+                         "value":false
+                        }],
+                 "template":"..\/templates\/trap.tx",
+                 "x":151,
+                 "y":67.6666666666667
+                }, 
+                {
+                 "id":22,
+                 "properties":[
+                        {
+                         "name":"enemyDamage",
+                         "type":"int",
+                         "value":5
+                        }, 
+                        {
+                         "name":"lethal",
+                         "type":"bool",
+                         "value":false
+                        }],
+                 "template":"..\/templates\/trap.tx",
+                 "x":168.666666666667,
+                 "y":92.6666666666667
+                }, 
+                {
+                 "id":23,
+                 "properties":[
+                        {
+                         "name":"enemyDamage",
+                         "type":"int",
+                         "value":5
+                        }, 
+                        {
+                         "name":"lethal",
+                         "type":"bool",
+                         "value":false
+                        }],
+                 "template":"..\/templates\/trap.tx",
+                 "x":186.333333333333,
+                 "y":138
+                }, 
+                {
+                 "id":24,
+                 "properties":[
+                        {
+                         "name":"enemyDamage",
+                         "type":"int",
+                         "value":5
+                        }, 
+                        {
+                         "name":"lethal",
+                         "type":"bool",
+                         "value":false
+                        }],
+                 "template":"..\/templates\/trap.tx",
+                 "x":152.666666666667,
+                 "y":140
+                }, 
+                {
+                 "id":25,
+                 "properties":[
+                        {
+                         "name":"enemyDamage",
+                         "type":"int",
+                         "value":5
+                        }, 
+                        {
+                         "name":"lethal",
+                         "type":"bool",
+                         "value":false
+                        }],
+                 "template":"..\/templates\/trap.tx",
+                 "x":153.333333333333,
+                 "y":158.666666666667
+                }, 
+                {
+                 "id":26,
+                 "properties":[
+                        {
+                         "name":"enemyDamage",
+                         "type":"int",
+                         "value":5
+                        }, 
+                        {
+                         "name":"lethal",
+                         "type":"bool",
+                         "value":false
+                        }],
+                 "template":"..\/templates\/trap.tx",
+                 "x":166.333333333333,
+                 "y":183
+                }, 
+                {
+                 "id":27,
+                 "properties":[
+                        {
+                         "name":"enemyDamage",
+                         "type":"int",
+                         "value":5
+                        }, 
+                        {
+                         "name":"lethal",
+                         "type":"bool",
+                         "value":false
+                        }],
+                 "template":"..\/templates\/trap.tx",
+                 "x":150.666666666667,
+                 "y":190.333333333333
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -123,7 +259,7 @@
          "y":0
         }],
  "nextlayerid":5,
- "nextobjectid":9,
+ "nextobjectid":28,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2-2-geb83ddb9",

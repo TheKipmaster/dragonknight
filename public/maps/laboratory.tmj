@@ -11,7 +11,7 @@
          "name":"floor",
          "opacity":1,
          "type":"tilelayer",
-         "visible":false,
+         "visible":true,
          "width":20,
          "x":0,
          "y":0
@@ -99,7 +99,7 @@
                 }, 
                 {
                  "id":8,
-                 "template":"spawn.tx",
+                 "template":"..\/templates\/spawn.tx",
                  "type":"spawn",
                  "x":120.672482523543,
                  "y":264.74088624415
