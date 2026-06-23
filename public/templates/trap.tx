@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object name="trap" type="trap">
+  <point/>
+  <properties>
+   <property name="playerDamage" type="int" value="4"/>
+   <property name="enemyDamage" type="int" value="999"/>
+   <property name="lethal" type="bool" value="true"/>
+   <property name="rearmMs" type="int" value="2500"/>
+   <property name="knockback" type="int" value="60"/>
+  </properties>
+ </object>
+</template>

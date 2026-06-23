@@ -29,6 +29,7 @@ export const TEX = {
   charger: 'charger',
   key: 'key',
   splat: 'splat', //      death decal dropped where an enemy dies
+  trap: 'trap', //        hidden magic-glyph hazard rune (tinted at runtime)
   tiles: 'tiles-stone', // shared dungeon tileset image (public/tiles/stone.png)
 } as const;
 
@@ -126,6 +127,33 @@ export const CHARGER = {
   lungeKnockback: 240, //impulse applied to the Player by a lunge (px/s)
   contactDamage: 1, //   passive body-contact half-Hearts (1 = half a Heart)
   contactKnockback: 160,//impulse applied to the Player by passive contact (px/s)
+} as const;
+
+/** ── Trap tuning ──────────────────────────────────────────────────────────
+ *  A hidden magic-glyph floor hazard (CONTEXT.md; ADR 0008). Invisible until an
+ *  entity steps on it, then an instant flash + hit — no Telegraph. Damage is
+ *  victim-aware: a survivable bite to the Player, lethal to an ordinary Enemy by
+ *  default. It springs once for free, then stays revealed and re-arms on a
+ *  cadence (lit = live, dimmed = spent). These are global defaults; a map's
+ *  `trap` object overrides the gameplay numbers via Tiled props (see TiledRoom). */
+export const TRAP = {
+  // Gameplay — per-trap overridable in Tiled (camelCase property names).
+  playerDamage: 4, //    half-Hearts removed from the Player (4 = 2 Hearts)
+  enemyDamage: 999, //   HP removed from an Enemy — used only when lethal=false
+  lethal: true, //       default: one-shot any Enemy regardless of its HP
+  rearmMs: 2500, //      dormant window after springing before it re-arms (ms)
+  knockback: 60, //      radial impulse shoving the victim off the glyph (px/s)
+
+  // Footprint — inset within the 16px tile so clipping a corner won't spring it.
+  triggerSize: 12, //    overlap zone side (px)
+
+  // Presentation — placeholder rune; art pass later. State reads via opacity.
+  glyphSize: 14, //      generated rune texture side (px)
+  color: 0xb05cf0, //    arcane purple (the magic/charger family)
+  litAlpha: 0.9, //      opacity while armed-and-revealed (reads as live)
+  dimAlpha: 0.3, //      opacity while dormant/re-arming (reads as spent/safe)
+  flashMs: 130, //       spring flash duration (ms)
+  depth: -8, //          above floor/decals (-9/-10), below walls/entities (0+)
 } as const;
 
 /** ── Spawner Switch tuning ────────────────────────────────────────────────

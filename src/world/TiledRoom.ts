@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { DECALS, DECAL_DEPTH, TEX, TILE, TILESET_NAME } from '../config/constants';
-import type { DoorTrigger, EnemySpawn, ItemSpawn, Room } from './Room';
+import { DECALS, DECAL_DEPTH, TEX, TILE, TILESET_NAME, TRAP } from '../config/constants';
+import type { DoorTrigger, EnemySpawn, ItemSpawn, Room, TrapSpawn } from './Room';
 import type { NavGrid } from '../components/FlowField';
 
 /**
@@ -30,6 +30,7 @@ export class TiledRoom implements Room {
   readonly doors: DoorTrigger[] = [];
   readonly items: ItemSpawn[] = [];
   readonly enemies: EnemySpawn[] = [];
+  readonly traps: TrapSpawn[] = [];
 
   private map?: Phaser.Tilemaps.Tilemap;
   private layers: Phaser.Tilemaps.TilemapLayer[] = [];
@@ -92,6 +93,7 @@ export class TiledRoom implements Room {
     this.spawns.clear();
     this.doors.length = 0;
     this.items.length = 0;
+    this.traps.length = 0;
     const objects = map.getObjectLayer('objects')?.objects ?? [];
 
     for (const obj of objects) {
@@ -123,6 +125,21 @@ export class TiledRoom implements Room {
         this.enemies.push({id: `${this.id}#${obj.id}`, kind: obj.name, x, y})
       } else if (obj.point && obj.name === 'key') {
         this.items.push({ id: `${this.id}#${obj.id}`, kind: 'key', x, y });
+      } else if (obj.point && obj.name === 'trap') {
+        // A hidden hazard (ADR 0008). Zero properties = a lethal, standard-bite
+        // glyph; any camelCase prop overrides the TRAP default. Values arrive as
+        // strings (see props()), so coerce numbers and parse `lethal` the Door way.
+        const p = this.props(obj);
+        this.traps.push({
+          id: `${this.id}#${obj.id}`,
+          x,
+          y,
+          playerDamage: p.playerDamage != null ? Number(p.playerDamage) : TRAP.playerDamage,
+          enemyDamage: p.enemyDamage != null ? Number(p.enemyDamage) : TRAP.enemyDamage,
+          lethal: p.lethal != null ? p.lethal === 'true' : TRAP.lethal,
+          rearmMs: p.rearmMs != null ? Number(p.rearmMs) : TRAP.rearmMs,
+          knockback: p.knockback != null ? Number(p.knockback) : TRAP.knockback,
+        });
       } else if (obj.point && obj.name && obj.name in DECALS) {
         // A floor decal: the marker name is the texture key (see DECALS). Centred
         // on the marker (image origin defaults to 0.5), drawn above the floor.

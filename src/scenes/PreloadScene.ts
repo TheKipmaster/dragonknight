@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE, TEX, DECALS, SPLAT } from '../config/constants';
+import { TILE, TEX, DECALS, SPLAT, TRAP } from '../config/constants';
 import { ROOM_IDS } from '../world/rooms';
 import {
   collectTemplateNames,
@@ -43,6 +43,7 @@ export class PreloadScene extends Phaser.Scene {
     this.makeRect(TEX.charger, TILE, TILE, 0xb05cf0, 0x5a2080);
     this.makeRect(TEX.key, 10, 12, 0xffd34d, 0x8a6a12);
     this.makeSplat();
+    this.makeGlyph();
 
     // Phaser doesn't expand Tiled object templates; resolve them before any
     // Room is built (see tiledTemplates.ts), then enter the game.
@@ -123,6 +124,32 @@ export class PreloadScene extends Phaser.Scene {
       g.fillCircle(c + Math.cos(angle) * dist, c + Math.sin(angle) * dist, blobR);
     }
     g.generateTexture(TEX.splat, size, size);
+    g.destroy();
+  }
+
+  /**
+   * Generate the Trap's placeholder rune: two concentric rings with radial
+   * ticks, baked white so the Trap can tint it (TRAP.color) and vary alpha to
+   * read its armed/dormant state. Swapped for real art in the art pass.
+   */
+  private makeGlyph(): void {
+    const s = TRAP.glyphSize;
+    const c = s / 2;
+    const outer = c - 1;
+    const g = this.add.graphics();
+    g.lineStyle(1.5, 0xffffff, 1);
+    g.strokeCircle(c, c, outer);
+    g.strokeCircle(c, c, outer * 0.5);
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2;
+      g.lineBetween(
+        c + Math.cos(a) * outer * 0.5,
+        c + Math.sin(a) * outer * 0.5,
+        c + Math.cos(a) * outer,
+        c + Math.sin(a) * outer,
+      );
+    }
+    g.generateTexture(TEX.trap, s, s);
     g.destroy();
   }
 }

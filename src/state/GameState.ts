@@ -22,6 +22,9 @@ export interface DungeonProgress {
   doorsOpened: Set<string>;
   /** Persistent ids of one-shot items already collected — they don't respawn. */
   itemsTaken: Set<string>;
+  /** Persistent ids of Traps already sprung — they rebuild revealed (but live)
+   *  instead of getting their hidden first-strike again (ADR 0003 amendment). */
+  trapsSprung: Set<string>;
 }
 
 export const GameState = {
@@ -36,6 +39,7 @@ export const GameState = {
     keysHeld: 0,
     doorsOpened: new Set<string>(),
     itemsTaken: new Set<string>(),
+    trapsSprung: new Set<string>(),
   } as DungeonProgress,
 };
 

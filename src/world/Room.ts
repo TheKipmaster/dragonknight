@@ -34,6 +34,28 @@ export interface EnemySpawn {
 }
 
 /**
+ * A Trap to build when the Room activates (CONTEXT.md; ADR 0008). Carries its
+ * resolved per-Trap config: the TRAP defaults, with any Tiled custom-property
+ * overrides already applied by TiledRoom. The scene builds the live Trap.
+ */
+export interface TrapSpawn {
+  /** Persistent id (`roomId#objectId`) so a sprung Trap rebuilds revealed. */
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  /** Half-Hearts removed from the Player. */
+  readonly playerDamage: number;
+  /** HP removed from an Enemy when not `lethal`. */
+  readonly enemyDamage: number;
+  /** Default: kill any Enemy outright regardless of HP. */
+  readonly lethal: boolean;
+  /** Dormant window before it re-arms (ms). */
+  readonly rearmMs: number;
+  /** Radial impulse shoving the victim off the glyph (px/s). */
+  readonly knockback: number;
+}
+
+/**
  * The Room lifecycle seam (ADR 0001).
  *
  * Loading is split into two costs that stay separate: asset I/O (expensive,
@@ -57,8 +79,11 @@ export interface Room {
   /** Item spawns parsed from the map's object layer (e.g. Keys). */
   readonly items: readonly ItemSpawn[];
 
-  /** Item spawns parsed from the map's object layer (e.g. Keys). */
+  /** Enemy spawns parsed from the map's object layer. */
   readonly enemies: readonly EnemySpawn[];
+
+  /** Trap spawns parsed from the map's object layer (ADR 0008). */
+  readonly traps: readonly TrapSpawn[];
 
   /** Look up a named spawn marker (e.g. a door's targetSpawn). */
   spawnAt(name: string): Phaser.Math.Vector2 | undefined;

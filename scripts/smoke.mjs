@@ -80,6 +80,60 @@ try {
         console.log(`behaviour OK — Walker HP ${before.hp} → ${hpAfter} after a ${DMG} hit`);
       }
     }
+
+    // ── Behavioural assertion: a Trap bites the Player but kills an Enemy ──────
+    // Drives the real Trap path (addTrap → Trap.springOn → victim-aware Attack →
+    // hit) for both victim categories (ADR 0008), plus the armed gating and the
+    // persistence record — all without authoring a map object.
+    const trap = await page.evaluate(() => {
+      const scene = window.__GAME.scene.getScene('Game');
+      const cfg = { playerDamage: 4, enemyDamage: 999, lethal: true, rearmMs: 999999, knockback: 0 };
+
+      // Start the Player from full with no active i-frames so the bite lands.
+      window.__STATE.player.halfHearts = window.__STATE.player.maxHalfHearts;
+      scene.player.invulnerableUntil = 0;
+
+      // (1) Player profile: a survivable bite drops playerDamage half-Hearts.
+      scene.addTrap(0, 0, cfg, 'smoke#player');
+      const trapP = scene.traps[scene.traps.length - 1];
+      const heartsBefore = window.__STATE.player.halfHearts;
+      trapP.springOn(scene.player, 'player');
+      const heartsAfter = window.__STATE.player.halfHearts;
+
+      // (2) Enemy profile: lethal kills a full-HP Walker; the now-disarmed Trap
+      //     leaves a second Walker untouched (enemies have no i-frames, so any
+      //     "no damage" is the Trap's own armed gating, not invulnerability).
+      scene.spawnWalker();
+      const w1 = scene.hostiles.getChildren().at(-1);
+      scene.addTrap(w1.x, w1.y, cfg, 'smoke#enemy');
+      const trapE = scene.traps[scene.traps.length - 1];
+      trapE.springOn(w1, 'enemy');
+      const w1hp = w1.health.current;
+
+      scene.spawnWalker();
+      const w2 = scene.hostiles.getChildren().at(-1);
+      trapE.springOn(w2, 'enemy'); // already sprung → disarmed → no-op
+      return {
+        heartsBefore, heartsAfter, w1hp,
+        w2hp: w2.health.current, w2max: w2.health.max,
+        persisted: window.__STATE.progress.trapsSprung.has('smoke#player'),
+      };
+    });
+
+    if (trap.heartsAfter !== trap.heartsBefore - 4) {
+      errors.push(`Trap player bite: expected ${trap.heartsBefore - 4} half-Hearts, got ${trap.heartsAfter}`);
+    } else if (trap.w1hp !== 0) {
+      errors.push(`Trap should kill a Walker (HP 0), got ${trap.w1hp}`);
+    } else if (trap.w2hp !== trap.w2max) {
+      errors.push(`Disarmed Trap should not re-hit (expected ${trap.w2max} HP), got ${trap.w2hp}`);
+    } else if (!trap.persisted) {
+      errors.push('Trap spring should be recorded in progress.trapsSprung');
+    } else {
+      console.log(
+        `behaviour OK — Trap bit Player ${trap.heartsBefore}→${trap.heartsAfter} half-Hearts, ` +
+          `killed a Walker, and gated the re-hit`,
+      );
+    }
   }
 } catch (err) {
   if (/Executable doesn't exist|playwright install/i.test(String(err?.message))) {

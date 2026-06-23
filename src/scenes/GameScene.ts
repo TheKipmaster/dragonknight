@@ -6,13 +6,14 @@ import { Charger } from '../entities/Charger';
 import { Key } from '../entities/Key';
 import { RoomManager } from '../world/RoomManager';
 import { Switch } from '../world/Switch';
+import { Trap } from '../world/Trap';
 import { FlowField } from '../components/FlowField';
 import { PathfindingDebug } from '../debug/PathfindingDebug';
 import type { Room } from '../world/Room';
 import { GameState } from '../state/GameState';
 import { eventBus, GameEvent } from '../state/eventBus';
 import { isContactAttacker } from '../combat/Attack';
-import { DECAL_DEPTH, SPAWNER, SPLAT, TEX, TILE } from '../config/constants';
+import { DECAL_DEPTH, SPAWNER, SPLAT, TEX, TILE, TRAP } from '../config/constants';
 
 /**
  * Gameplay scene. A RoomManager owns the active Room and drives transitions
@@ -37,6 +38,11 @@ export class GameScene extends Phaser.Scene {
   private spawnSwitch?: Switch;
   private switchOverlap?: Phaser.Physics.Arcade.Collider;
 
+  /** Live Traps in the active Room; their overlap zones live in `trapZones`
+   *  (a persistent group with two standing overlaps, members swapped per Room). */
+  private trapZones!: Phaser.GameObjects.Group;
+  private traps: Trap[] = [];
+
   /** Shared enemy pathfinding for the active Room: one BFS distance map from the
    *  Player serves the whole hostile swarm. Rebuilt per Room, re-aimed per frame. */
   private nav!: FlowField;
@@ -53,6 +59,7 @@ export class GameScene extends Phaser.Scene {
     this.solids = this.add.group();
     this.pickups = this.add.group();
     this.decals = this.add.group();
+    this.trapZones = this.add.group();
 
     // The Player is the through-line across Rooms: created once, repositioned by
     // the manager on each transition.
@@ -68,6 +75,10 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.hostiles, this.solids);
     this.physics.add.overlap(this.player, this.hostiles, this.onContact, undefined, this);
     this.physics.add.overlap(this.player, this.pickups, this.onPickup, undefined, this);
+    // Traps discriminate their victim by *which* overlap fires, not by type
+    // (ADR 0008): the Player takes a survivable bite, an Enemy a lethal one.
+    this.physics.add.overlap(this.player, this.trapZones, this.onTrapPlayer, undefined, this);
+    this.physics.add.overlap(this.hostiles, this.trapZones, this.onTrapEnemy, undefined, this);
 
     this.pathDebug = new PathfindingDebug(this);
 
@@ -90,6 +101,7 @@ export class GameScene extends Phaser.Scene {
     // the Player crossed into a new cell, so the BFS only runs when needed.
     this.nav.retarget(this.player.x, this.player.y);
     this.spawnSwitch?.update(time);
+    for (const trap of this.traps) trap.update(time);
     this.pathDebug.update();
   }
 
@@ -109,6 +121,10 @@ export class GameScene extends Phaser.Scene {
       this.attackables.add(enemy);
       this.hostiles.add(enemy);
     }
+
+    // Build map-authored Traps. A Trap sprung on a previous visit rebuilds
+    // revealed-but-live (its id is remembered in progress; ADR 0003 amendment).
+    for (const t of room.traps) this.addTrap(t.x, t.y, t, t.id);
 
     // Spawn map-authored items, skipping any already collected (they don't respawn).
     for (const item of room.items) {
@@ -139,6 +155,24 @@ export class GameScene extends Phaser.Scene {
     this.switchOverlap = undefined;
     this.spawnSwitch?.destroy();
     this.spawnSwitch = undefined;
+    // Destroying each Trap tears down its glyph and zone (the zone auto-leaves
+    // trapZones on destroy); the two standing overlaps survive for the next Room.
+    for (const trap of this.traps) trap.destroy();
+    this.traps.length = 0;
+  }
+
+  /** Build a Trap, remembering whether it was already sprung (persistence). */
+  private addTrap(
+    x: number,
+    y: number,
+    config: import('../world/Trap').TrapConfig,
+    id: string,
+  ): void {
+    const trap = new Trap(this, x, y, config, GameState.progress.trapsSprung.has(id), () =>
+      GameState.progress.trapsSprung.add(id),
+    );
+    this.traps.push(trap);
+    this.trapZones.add(trap.zone);
   }
 
   /** The debug Room's iteration rig: dummies, a Charger, and a Walker spawner. */
@@ -171,11 +205,37 @@ export class GameScene extends Phaser.Scene {
     this.switchOverlap = this.physics.add.overlap(this.player, this.spawnSwitch.zone, () =>
       this.spawnSwitch?.notifyOverlap(),
     );
+
+    // A demo Trap to iterate on feel (hidden until stepped on; lethal to Enemies
+    // so the spawned Walkers can be lured onto it). Maps author their own via a
+    // `trap` point object; this is the debug-rig analogue of the hardcoded Charger.
+    this.addTrap(
+      x,
+      y - TILE * 4.5,
+      {
+        playerDamage: TRAP.playerDamage,
+        enemyDamage: TRAP.enemyDamage,
+        lethal: TRAP.lethal,
+        rearmMs: TRAP.rearmMs,
+        knockback: TRAP.knockback,
+      },
+      'room-debug#trap-demo',
+    );
   }
 
   /** Enemy touched the Player: route contact damage through the Attack chokepoint. */
   private onContact: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, enemy) => {
     if (isContactAttacker(enemy)) this.player.hit(enemy.contactAttack());
+  };
+
+  /** Player stepped on a Trap zone: spring it with the Player damage profile. */
+  private onTrapPlayer: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, zone) => {
+    (zone as Phaser.GameObjects.GameObject).getData('trap')?.springOn(this.player, 'player');
+  };
+
+  /** An Enemy stepped on a Trap zone: spring it with the (lethal) Enemy profile. */
+  private onTrapEnemy: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (enemy, zone) => {
+    (zone as Phaser.GameObjects.GameObject).getData('trap')?.springOn(enemy, 'enemy');
   };
 
   /** Player touched a pickup: collect it and record it as taken (no respawn). */
