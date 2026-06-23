@@ -51,6 +51,7 @@ export class Charger
     y: number,
     private readonly target: Phaser.GameObjects.Sprite,
     private readonly nav: Navigator,
+    startActive = false,
   ) {
     super(scene, x, y, TEX.charger);
     scene.add.existing(this);
@@ -87,7 +88,9 @@ export class Charger
           if (this.scene.time.now >= this.stateUntil) this.ai.change('chase');
         },
       });
-    this.ai.change('inactive');
+    // Dormant by default, waking on aggro; startActive stalks from birth,
+    // ignoring aggroRange (mirrors Walker — see its note).
+    this.ai.change(startActive ? 'chase' : 'inactive');
   }
 
   preUpdate(time: number, delta: number): void {

@@ -31,6 +31,7 @@ export class Walker
     y: number,
     private readonly target: Phaser.GameObjects.Sprite,
     private readonly nav: Navigator,
+    startActive = false,
   ) {
     super(scene, x, y, TEX.walker);
     scene.add.existing(this);
@@ -52,7 +53,10 @@ export class Walker
           if (this.scene.time.now >= this.hurtUntil) this.ai.change('chase');
         },
       });
-    this.ai.change('inactive');
+    // Map-/nest-spawned Walkers start dormant and wake on aggro; a startActive
+    // Walker (the trapped-corridor's posted threat) chases from birth, ignoring
+    // aggroRange — it's spawned *because* it should already be coming.
+    this.ai.change(startActive ? 'chase' : 'inactive');
   }
 
   preUpdate(time: number, delta: number): void {

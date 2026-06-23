@@ -7,8 +7,10 @@ import { eventBus, GameEvent } from '../state/eventBus';
 
 /** Per-Room content hooks: the scene builds/tears down its entity rig here. */
 export interface RoomContentHooks {
-  /** Called after a Room activates: build entities, register room colliders. */
-  onEnter(room: Room): void;
+  /** Called after a Room activates: build entities, register room colliders.
+   *  `fromSpawn` is the named spawn the Player was dropped at (the door's
+   *  targetSpawn, or 'start' on boot) — lets content key off the entry side. */
+  onEnter(room: Room, fromSpawn: string): void;
   /** Called before a Room deactivates: destroy the entities built in onEnter. */
   onExit(room: Room): void;
 }
@@ -47,7 +49,7 @@ export class RoomManager {
     this.current = this.activate(roomId, spawn);
     this.scene.cameras.main.startFollow(this.player, true, 0.15, 0.15);
     this.scene.cameras.main.roundPixels = true;
-    this.hooks.onEnter(this.current);
+    this.hooks.onEnter(this.current, spawn);
   }
 
   /** Transition to another Room, placing the Player at `spawn`. */
@@ -64,7 +66,7 @@ export class RoomManager {
 
       this.current = this.activate(roomId, spawn);
       cam.startFollow(this.player, true, 0.15, 0.15);
-      this.hooks.onEnter(this.current);
+      this.hooks.onEnter(this.current, spawn);
       eventBus.emit(GameEvent.RoomChanged);
 
       cam.fadeIn(FADE_MS);

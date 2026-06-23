@@ -180,6 +180,15 @@ export const SPAWN_SWITCH = {
   attempts: 12, //       tries to find a wall-free spawn point before giving up
 } as const;
 
+/** ── Trapped-corridor lone-Walker trickle ─────────────────────────────────
+ *  The trapped-corridor posts one Walker at a time at the corridor's *far* end
+ *  (opposite the mouth the Player came in by), so the Player must walk it back
+ *  through the traps. When it dies, a relief posts after a cooldown — one at a
+ *  time, forever. Scripted in GameScene; the post is driven by TrickleSpawner. */
+export const CORRIDOR = {
+  walkerCooldownMs: 2000, // gap after a posted Walker dies before its relief posts
+} as const;
+
 /** ── Spawner entity tuning ────────────────────────────────────────────────
  *  A stationary, destroyable nest (CONTEXT.md; ADR 0009). Once the Player comes
  *  within `aggroRange` it telegraphs and conjures a Wave — a batch drawn at

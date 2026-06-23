@@ -44,12 +44,29 @@ export interface Navigator {
 /** Integer step costs (scaled so a diagonal ≈ √2 orthogonals). */
 const STEP_ORTHO = 10;
 const STEP_DIAG = 14;
-/** Keep paths at least this many cells off a wall when an alternative exists. */
-const CLEAR_WANT = 2;
-/** Extra cost per cell a path runs short of CLEAR_WANT — bows routes into the
- *  open. Big enough to prefer a short detour over hugging a wall, small enough
- *  that a 1-wide corridor (no alternative) is still used. */
-const CLEAR_COST = 12;
+/** Default: keep paths at least this many cells off a wall when an alternative
+ *  exists. Overridable per field (see FlowFieldOptions). */
+const CLEAR_WANT_DEFAULT = 2;
+/** Default extra cost per cell a path runs short of CLEAR_WANT — bows routes
+ *  into the open. Big enough to prefer a short detour over hugging a wall, small
+ *  enough that a 1-wide corridor (no alternative) is still used. Overridable per
+ *  field (see FlowFieldOptions). */
+const CLEAR_COST_DEFAULT = 12;
+
+/**
+ * Per-field tuning for the clearance bias — how hard the flood bows paths into
+ * the open, away from walls. Per-field (not a module constant) so a Room can
+ * opt out: the trapped-corridor turns the bias down so walkers take the short
+ * line to the Player and can be baited onto its flank traps, rather than
+ * funnelling down the centre lane the default bias prefers.
+ */
+export interface FlowFieldOptions {
+  /** Keep paths at least this many cells off a wall when an alternative exists. */
+  clearWant?: number;
+  /** Extra cost per cell a path runs short of clearWant. 0 disables the bias
+   *  entirely (the field becomes plain shortest-path). */
+  clearCost?: number;
+}
 /** Sentinel "not reached" for the integer distance/clearance maps. */
 const UNREACHED = 0x7fffffff;
 
@@ -92,8 +109,13 @@ export class FlowField implements Navigator {
   private targetCol = -1;
   private targetRow = -1;
   private readonly step = new Phaser.Math.Vector2();
+  /** Clearance-bias tuning for this field (see FlowFieldOptions). */
+  private readonly clearWant: number;
+  private readonly clearCost: number;
 
-  constructor(private readonly grid: NavGrid) {
+  constructor(private readonly grid: NavGrid, options: FlowFieldOptions = {}) {
+    this.clearWant = options.clearWant ?? CLEAR_WANT_DEFAULT;
+    this.clearCost = options.clearCost ?? CLEAR_COST_DEFAULT;
     const cells = grid.cols * grid.rows;
     this.dist = new Int32Array(cells);
     this.clearance = new Int32Array(cells);
@@ -243,7 +265,7 @@ export class FlowField implements Navigator {
         }
         const ni = nr * cols + nc;
         const stepLen = dc !== 0 && dr !== 0 ? STEP_DIAG : STEP_ORTHO;
-        const penalty = CLEAR_COST * Math.max(0, CLEAR_WANT - clear[ni]);
+        const penalty = this.clearCost * Math.max(0, this.clearWant - clear[ni]);
         const nd = base + stepLen + penalty;
         if (nd < this.dist[ni]) {
           this.dist[ni] = nd;

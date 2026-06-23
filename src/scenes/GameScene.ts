@@ -8,13 +8,14 @@ import { Key } from '../entities/Key';
 import { RoomManager } from '../world/RoomManager';
 import { Switch } from '../world/Switch';
 import { Trap } from '../world/Trap';
+import { TrickleSpawner } from '../world/TrickleSpawner';
 import { FlowField } from '../components/FlowField';
 import { PathfindingDebug } from '../debug/PathfindingDebug';
 import type { Room } from '../world/Room';
 import { GameState } from '../state/GameState';
 import { eventBus, GameEvent } from '../state/eventBus';
 import { isContactAttacker } from '../combat/Attack';
-import { DECAL_DEPTH, SPAWN_SWITCH, SPLAT, TEX, TILE, TRAP } from '../config/constants';
+import { CORRIDOR, DECAL_DEPTH, SPAWN_SWITCH, SPLAT, TEX, TILE, TRAP } from '../config/constants';
 
 /**
  * Gameplay scene. A RoomManager owns the active Room and drives transitions
@@ -41,6 +42,10 @@ export class GameScene extends Phaser.Scene {
 
   /** The active Room's destroyable Spawner nests (ADR 0009), map-authored. */
   private spawners: Spawner[] = [];
+
+  /** The trapped-corridor's scripted lone-Walker post (set only in that Room,
+   *  keyed off the entry side); undefined elsewhere. Reset on Room teardown. */
+  private corridorWalkers?: TrickleSpawner;
 
   /** Live Traps in the active Room; their overlap zones live in `trapZones`
    *  (a persistent group with two standing overlaps, members swapped per Room). */
@@ -87,7 +92,7 @@ export class GameScene extends Phaser.Scene {
     this.pathDebug = new PathfindingDebug(this);
 
     this.manager = new RoomManager(this, this.player, {
-      onEnter: (room) => this.populate(room),
+      onEnter: (room, fromSpawn) => this.populate(room, fromSpawn),
       onExit: () => this.clearContent(),
     });
     this.manager.enter(GameState.activeRoomId);
@@ -106,17 +111,28 @@ export class GameScene extends Phaser.Scene {
     this.nav.retarget(this.player.x, this.player.y);
     this.spawnSwitch?.update(time);
     for (const spawner of this.spawners) spawner.update(time);
+    this.corridorWalkers?.update(time);
     for (const trap of this.traps) trap.update(time);
     this.pathDebug.update();
   }
 
-  /** Per-Room setup (manager onEnter): wire Room walls, then build its content. */
-  private populate(room: Room): void {
+  /** Per-Room setup (manager onEnter): wire Room walls, then build its content.
+   *  `fromSpawn` is the marker the Player entered at — the trapped-corridor keys
+   *  its scripted Walker post off which mouth that was (see buildCorridorWalkers). */
+  private populate(room: Room, fromSpawn: string): void {
     room.addColliders(this.player);
     room.addColliders(this.hostiles);
 
     // One flow field per Room (walls are static); enemies share it for chasing.
-    this.nav = new FlowField(room.buildNavGrid());
+    // Most Rooms use the default clearance bias, which bows paths into the open
+    // and so funnels chasers down a corridor's centre lane. The trapped-corridor
+    // turns that bias down: the field then routes (near) shortest-path to the
+    // Player's actual position, so the player can bait walkers off-centre onto
+    // its flank traps. Per-field via FlowFieldOptions — the Navigator seam means
+    // no enemy code changes. (clearCost is the dial; lower = more steerable, 0 =
+    // pure shortest-path. Tune to taste.)
+    const navOptions = room.id === 'trapped-corridor' ? { clearCost: 0 } : {};
+    this.nav = new FlowField(room.buildNavGrid(), navOptions);
 
     for (const e of room.enemies) this.spawnEnemy(e.kind, e.x, e.y);
 
@@ -137,6 +153,10 @@ export class GameScene extends Phaser.Scene {
     // For now only the debug Room carries the practice rig; the others are bare
     // walkable Rooms. (Future: Rooms author their own entity placement.)
     if (room.id === 'room-debug') this.buildPracticeRig(room);
+
+    // The trapped-corridor feeds lone Walkers in from its far end (entry-side
+    // dependent); no-op in every other Room.
+    if (room.id === 'trapped-corridor') this.buildCorridorWalkers(room, fromSpawn);
 
     // Seed the field once static obstacles (e.g. dummies) are stamped in.
     this.nav.retarget(this.player.x, this.player.y);
@@ -164,6 +184,35 @@ export class GameScene extends Phaser.Scene {
     // trapZones on destroy); the two standing overlaps survive for the next Room.
     for (const trap of this.traps) trap.destroy();
     this.traps.length = 0;
+    // Its posted Walker is in the groups cleared above; just drop the post.
+    this.corridorWalkers = undefined;
+  }
+
+  /** The trapped-corridor's scripted threat: one Walker posted at the corridor's
+   *  *far* end — the entry mouth's opposite — so the Player must walk it back
+   *  through the traps (and can juke it onto the flanks). Entry-side dependent:
+   *  in via the bottom (entrance) → post at the top (from-corpse-pile); in via
+   *  the top (corpse-pile) → post at the bottom (from-entrance); in via the
+   *  sanctum (the mid-corridor side door) → no post, it has no opposite end.
+   *  One at a time, with a cooldown before the relief (see TrickleSpawner). */
+  private buildCorridorWalkers(room: Room, fromSpawn: string): void {
+    const postSpawn =
+      fromSpawn === 'from-entrance'
+        ? 'from-corpse-pile'
+        : fromSpawn === 'from-corpse-pile'
+          ? 'from-entrance'
+          : undefined;
+    if (!postSpawn) return;
+
+    const post = room.spawnAt(postSpawn);
+    if (!post) return;
+
+    this.corridorWalkers = new TrickleSpawner(
+      post.x,
+      post.y,
+      CORRIDOR.walkerCooldownMs,
+      (x, y) => this.spawnEnemy('walker', x, y, true), // posts active — chases on sight
+    );
   }
 
   /** Build a Trap, remembering whether it was already sprung (persistence). */
@@ -291,10 +340,15 @@ export class GameScene extends Phaser.Scene {
   /** Create an Enemy of `kind`, register it in the sword/contact groups, and
    *  return it. Shared by map-authored placement, the Spawner nest, and the
    *  Switch's spawn effect (via spawnWalker). */
-  private spawnEnemy(kind: string, x: number, y: number): Phaser.Physics.Arcade.Sprite {
+  private spawnEnemy(
+    kind: string,
+    x: number,
+    y: number,
+    active = false,
+  ): Phaser.Physics.Arcade.Sprite {
     const enemy = kind === 'charger'
-      ? new Charger(this, x, y, this.player, this.nav)
-      : new Walker(this, x, y, this.player, this.nav);
+      ? new Charger(this, x, y, this.player, this.nav, active)
+      : new Walker(this, x, y, this.player, this.nav, active);
     this.attackables.add(enemy);
     this.hostiles.add(enemy);
     return enemy;

@@ -95,10 +95,11 @@
                 }, 
                 {
                  "id":6,
+                 "name":"from-entrance",
                  "template":"..\/templates\/spawn.tx",
                  "x":167.543628555472,
                  "y":214.331580873149
-                }, 
+                },
                 {
                  "id":8,
                  "properties":[
