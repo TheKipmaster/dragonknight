@@ -220,3 +220,35 @@ export const SPAWNER = {
   markDepth: -8, //      above floor/decals, below walls/entities (like a Trap)
   deathMs: 200, //       crumble tween duration on destruction (ms)
 } as const;
+
+/** The Gauntlet (CONTEXT.md; ADR 0011): a Tripwire-triggered, deterministic
+ *  sequence of Waves rung and telegraphed around an authored anchor (the firing
+ *  Tripwire's region centre). Unlike the Spawner it has no body, isn't
+ *  destroyable, picks no Wave at random, and ends — the Player fights *through*
+ *  it. These are the shared knobs; each encounter's Wave list lives in its own
+ *  recipe (e.g. SANCTUM_GAUNTLET). The ring is *wider* than the Spawner's tight
+ *  nest ring: the Player is standing on the anchor when they trip it, so members
+ *  must not materialise on top of them. */
+export const GAUNTLET = {
+  minRadius: 56, //      nearest a Wave member spawns to the anchor (px) — clear of the Player
+  maxRadius: 96, //      farthest a Wave member spawns from the anchor (px)
+  attempts: 16, //       tries to find a wall-free point per member before skipping
+  telegraphMs: 900, //   lead/reaction window a Wave is previewed before it pops (ms)
+  breatherMs: 600, //    pause after a Wave is cleared before the next telegraphs (clear-mode)
+  spawnActive: true, //  Gauntlet Enemies wake on sight at once — a triggered arena fight
+  markColor: 0xff5c5c, //warning hue for the floor markers (matches the Spawner's)
+  markDepth: -8, //      above floor/decals, below walls/entities (like a Trap)
+} as const;
+
+/** The sanctum's boss-stand-in Gauntlet (ADR 0011), started by the `boss-fight`
+ *  Tripwire. Deterministic: the same three Waves every run, each cleared before
+ *  the next telegraphs (`advance: 'clear'`). Only the two MVP Enemy kinds exist;
+ *  tune the composition freely. Timer pacing would read `advance: { afterMs: N }`. */
+export const SANCTUM_GAUNTLET = {
+  advance: 'clear',
+  waves: [
+    [{ kind: 'walker', count: 5 }],
+    [{ kind: 'walker', count: 3 }, { kind: 'charger', count: 1 }],
+    [{ kind: 'walker', count: 5 }, { kind: 'charger', count: 2 }],
+  ],
+} as const;

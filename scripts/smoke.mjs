@@ -176,6 +176,72 @@ try {
     } else {
       console.log("behaviour OK — 'aggro' Tripwire woke a dormant Walker once and stayed fired");
     }
+
+    // ── Behavioural assertion: a Gauntlet runs its Waves to completion (ADR 0011) ─
+    // Drives the real Gauntlet lifecycle on a 2-Wave clear-mode recipe: lazy
+    // start → telegraph → pop (deterministic counts) → clear-advance → complete.
+    // Big time jumps clear every telegraph/breather deadline so each update steps
+    // one phase; clearing `hostiles` between Waves kills the live Wave so clear-
+    // mode advances. Asserts each Wave spawns its exact count and onComplete fires.
+    const g = await page.evaluate(() => {
+      const scene = window.__GAME.scene.getScene('Game');
+      const room = scene.manager.room;
+
+      let completed = false;
+      const recipe = {
+        advance: 'clear',
+        waves: [
+          [{ kind: 'walker', count: 2 }],
+          [{ kind: 'walker', count: 1 }],
+        ],
+      };
+      // Anchor on the Player (open floor, where they spawned) so the ring finds
+      // wall-free points for the deterministic counts.
+      const gauntlet = new window.__Gauntlet(
+        scene,
+        room,
+        scene.player.x,
+        scene.player.y,
+        recipe,
+        (kind, x, y) => scene.spawnEnemy(kind, x, y, true),
+        () => {
+          completed = true;
+        },
+      );
+
+      const baseline = scene.hostiles.getChildren().length;
+      let t = 1e6;
+      const step = () => {
+        t += 1e6;
+        gauntlet.update(t);
+      };
+      const liveAboveBaseline = () => scene.hostiles.getChildren().length - baseline;
+
+      step(); // breather(nextAt=0) → telegraph Wave 0
+      step(); // telegraph elapsed → pop Wave 0
+      const wave0 = liveAboveBaseline();
+
+      scene.hostiles.clear(true, true); // kill the live Wave → clear-mode advances
+      step(); // fighting: cleared → breather
+      step(); // breather → telegraph Wave 1
+      step(); // telegraph elapsed → pop Wave 1
+      const wave1 = scene.hostiles.getChildren().length; // group was emptied above
+
+      scene.hostiles.clear(true, true); // kill the final Wave
+      step(); // fighting: cleared + no more Waves → complete
+
+      return { wave0, wave1, completed };
+    });
+
+    if (g.wave0 !== 2) {
+      errors.push(`Gauntlet Wave 1 should spawn 2 Walkers, got ${g.wave0}`);
+    } else if (g.wave1 !== 1) {
+      errors.push(`Gauntlet Wave 2 should spawn 1 Walker, got ${g.wave1}`);
+    } else if (!g.completed) {
+      errors.push('Gauntlet should fire onComplete after its last Wave is cleared');
+    } else {
+      console.log('behaviour OK — Gauntlet ran 2 Waves (2→1) and completed on clear');
+    }
   }
 } catch (err) {
   if (/Executable doesn't exist|playwright install/i.test(String(err?.message))) {

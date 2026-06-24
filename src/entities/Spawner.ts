@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
-import { SPAWNER, TEX, TILE } from '../config/constants';
+import { SPAWNER, TEX } from '../config/constants';
 import { Health } from '../components/Health';
 import { withinAggro } from '../components/aggro';
 import type { Navigator } from '../components/FlowField';
 import type { Room } from '../world/Room';
+import { SpawnRing } from '../world/SpawnRing';
 import type { Attack, Damageable } from '../combat/Attack';
 import { eventBus, GameEvent } from '../state/eventBus';
 
@@ -72,7 +73,8 @@ export class Spawner
   private dead = false;
 
   private pending: PendingMember[] = [];
-  private readonly markers: Phaser.GameObjects.Image[] = [];
+  /** The tight ring it telegraphs and spawns Wave members in, around itself. */
+  private readonly ring: SpawnRing;
   /** Enemies this Spawner has produced; pruned to the still-alive for the cap. */
   private children: Phaser.Physics.Arcade.Sprite[] = [];
 
@@ -81,7 +83,7 @@ export class Spawner
     x: number,
     y: number,
     private readonly target: Phaser.GameObjects.Sprite,
-    private readonly room: Room,
+    room: Room,
     private readonly config: SpawnerConfig,
     private readonly nav: Navigator,
     private readonly spawn: SpawnFn,
@@ -91,6 +93,13 @@ export class Spawner
     scene.physics.add.existing(this, true); // static body: stationary + immovable
 
     this.health = new Health(scene, config.maxHp, { onDeath: () => this.die() });
+    this.ring = new SpawnRing(scene, room, {
+      minRadius: SPAWNER.minRadius,
+      maxRadius: SPAWNER.maxRadius,
+      attempts: SPAWNER.attempts,
+      markColor: SPAWNER.markColor,
+      markDepth: SPAWNER.markDepth,
+    });
   }
 
   /** Drive proximity gating and the telegraph/spawn cadence. Call once per frame. */
@@ -133,7 +142,7 @@ export class Spawner
     const pending: PendingMember[] = [];
     for (const part of recipe) {
       for (let i = 0; i < part.count; i++) {
-        const point = this.pickPoint();
+        const point = this.ring.pickPoint(this.x, this.y);
         if (point) pending.push({ kind: part.kind, x: point.x, y: point.y });
       }
     }
@@ -144,7 +153,7 @@ export class Spawner
     }
 
     this.pending = pending;
-    for (const m of pending) this.markers.push(this.makeMarker(m.x, m.y));
+    for (const m of pending) this.ring.raiseMarker(m.x, m.y, this.config.telegraphMs);
     this.phase = 'telegraphing';
     this.spawnAt = now + this.config.telegraphMs;
   }
@@ -156,7 +165,7 @@ export class Spawner
       this.children.push(this.spawn(m.kind, m.x, m.y));
     }
     this.pending = [];
-    this.clearMarkers();
+    this.ring.clearMarkers();
     this.idleFor(now, Math.max(0, this.config.intervalMs - this.config.telegraphMs));
   }
 
@@ -169,48 +178,8 @@ export class Spawner
    *  "owed" a spawn on return — re-approaching re-telegraphs from scratch. */
   private sleep(): void {
     this.pending = [];
-    this.clearMarkers();
+    this.ring.clearMarkers();
     this.phase = 'dormant';
-  }
-
-  /** A wall-free point in the tight ring around the Spawner, clamped to the Room,
-   *  or null if none found within `attempts` (the caller skips the member). */
-  private pickPoint(): { x: number; y: number } | null {
-    for (let i = 0; i < SPAWNER.attempts; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = Phaser.Math.Between(SPAWNER.minRadius, SPAWNER.maxRadius);
-      const x = Phaser.Math.Clamp(this.x + Math.cos(angle) * dist, TILE * 1.5, this.room.widthPx - TILE * 1.5);
-      const y = Phaser.Math.Clamp(this.y + Math.sin(angle) * dist, TILE * 1.5, this.room.heightPx - TILE * 1.5);
-      if (this.room.isSolidAt(x, y)) continue;
-      return { x, y };
-    }
-    return null;
-  }
-
-  /** A pulsing floor reticle marking where a Wave member is about to appear. */
-  private makeMarker(x: number, y: number): Phaser.GameObjects.Image {
-    const mark = this.scene.add
-      .image(x, y, TEX.spawnMark)
-      .setTint(SPAWNER.markColor)
-      .setDepth(SPAWNER.markDepth);
-    this.scene.tweens.add({
-      targets: mark,
-      scale: { from: 0.7, to: 1.2 },
-      alpha: { from: 0.4, to: 1 },
-      duration: this.config.telegraphMs / 3,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.inOut',
-    });
-    return mark;
-  }
-
-  private clearMarkers(): void {
-    for (const m of this.markers) {
-      this.scene.tweens.killTweensOf(m);
-      m.destroy();
-    }
-    this.markers.length = 0;
   }
 
   /** Drop destroyed children so the cap counts only Enemies still on the field. */
@@ -238,7 +207,7 @@ export class Spawner
   private die(): void {
     this.dead = true;
     this.pending = [];
-    this.clearMarkers();
+    this.ring.clearMarkers();
     (this.body as Phaser.Physics.Arcade.StaticBody).enable = false;
     eventBus.emit(GameEvent.EnemyDied, this.x, this.y);
     this.scene.tweens.add({
@@ -257,7 +226,7 @@ export class Spawner
    *  teardown (which bypasses die()). Idempotent with die()/sleep(). */
   destroy(fromScene?: boolean): void {
     this.dead = true;
-    this.clearMarkers();
+    this.ring.clearMarkers();
     super.destroy(fromScene);
   }
 }

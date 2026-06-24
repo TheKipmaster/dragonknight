@@ -5,6 +5,7 @@ import { PreloadScene } from './scenes/PreloadScene';
 import { GameScene } from './scenes/GameScene';
 import { UIScene } from './scenes/UIScene';
 import { GameState } from './state/GameState';
+import { Gauntlet } from './world/Gauntlet';
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -34,4 +35,5 @@ if (import.meta.env.VITE_EXPOSE_STATE) {
   const w = window as unknown as Record<string, unknown>;
   w.__GAME = game;
   w.__STATE = GameState;
+  w.__Gauntlet = Gauntlet; // so the smoke harness can drive a Gauntlet's lifecycle
 }

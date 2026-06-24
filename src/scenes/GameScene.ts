@@ -10,6 +10,7 @@ import { Switch } from '../world/Switch';
 import { Trap } from '../world/Trap';
 import { Tripwire } from '../world/Tripwire';
 import { TrickleSpawner } from '../world/TrickleSpawner';
+import { Gauntlet } from '../world/Gauntlet';
 import { FlowField } from '../components/FlowField';
 import { isActivatable } from '../components/Activatable';
 import { PathfindingDebug } from '../debug/PathfindingDebug';
@@ -19,7 +20,7 @@ import { eventBus, GameEvent } from '../state/eventBus';
 import { tripwires } from '../state/tripwires';
 import type { TripwireSpawn } from '../world/Room';
 import { isContactAttacker } from '../combat/Attack';
-import { CORRIDOR, DECAL_DEPTH, SPAWN_SWITCH, SPLAT, TEX, TILE, TRAP } from '../config/constants';
+import { CORRIDOR, DECAL_DEPTH, GAUNTLET, SANCTUM_GAUNTLET, SPAWN_SWITCH, SPLAT, TEX, TILE, TRAP } from '../config/constants';
 
 /**
  * Gameplay scene. A RoomManager owns the active Room and drives transitions
@@ -50,6 +51,10 @@ export class GameScene extends Phaser.Scene {
   /** The trapped-corridor's scripted lone-Walker post (set only in that Room,
    *  keyed off the entry side); undefined elsewhere. Reset on Room teardown. */
   private corridorWalkers?: TrickleSpawner;
+
+  /** The active, Tripwire-triggered Gauntlet, if one is running (ADR 0011); the
+   *  sanctum's `boss-fight` starts it. Discarded on Room teardown and on death. */
+  private gauntlet?: Gauntlet;
 
   /** Live Traps in the active Room; their overlap zones live in `trapZones`
    *  (a persistent group with two standing overlaps, members swapped per Room). */
@@ -128,6 +133,7 @@ export class GameScene extends Phaser.Scene {
     this.spawnSwitch?.update(time);
     for (const spawner of this.spawners) spawner.update(time);
     this.corridorWalkers?.update(time);
+    this.gauntlet?.update(time);
     for (const trap of this.traps) trap.update(time);
     for (const tw of this.tripwireRuntimes) tw.update();
     this.pathDebug.update();
@@ -212,6 +218,11 @@ export class GameScene extends Phaser.Scene {
     this.tripwireRuntimes.length = 0;
     // Its posted Walker is in the groups cleared above; just drop the post.
     this.corridorWalkers = undefined;
+    // Discard any running Gauntlet (ADR 0011): its spawned Enemies are in the
+    // groups cleared above; destroy() just tears down its in-flight telegraph so a
+    // stale controller can't keep ticking into the next Room.
+    this.gauntlet?.destroy();
+    this.gauntlet = undefined;
   }
 
   /** The trapped-corridor's scripted threat: one Walker posted at the corridor's
@@ -297,12 +308,25 @@ export class GameScene extends Phaser.Scene {
       for (const h of this.hostiles.getChildren()) if (isActivatable(h)) h.wake();
     });
 
-    // 'boss-fight' (sanctum): authored ahead of its system. Registered as a no-op
-    // placeholder so crossing it stays silent rather than firing the registry's
-    // "no handler" warning; replace this body once the boss encounter / Cutscene
-    // director lands (ADR 0010, and the Cutscene work in ADR 0006 / ROADMAP).
-    // TODO(boss-fight): play the boss-intro Cutscene and start the encounter.
-    tripwires.on('boss-fight', () => {});
+    // 'boss-fight' (sanctum): start the boss-stand-in Gauntlet (ADR 0011) rung
+    // around the Tripwire's region centre — the pentagram at room centre, where
+    // the Player is standing when they trip it. The Gauntlet runs forward through
+    // its Waves; it owns no failure path (a real game-over resets the run), and
+    // the once-ever Tripwire won't re-fire. onComplete is the encounter's payoff.
+    tripwires.on('boss-fight', ({ region }) => {
+      this.gauntlet = new Gauntlet(
+        this,
+        this.manager.room,
+        region.centerX,
+        region.centerY,
+        SANCTUM_GAUNTLET,
+        (kind, x, y) => this.spawnEnemy(kind, x, y, GAUNTLET.spawnActive),
+        () => {
+          // TODO(boss-fight): reveal the Treasure / play the win Cutscene (ROADMAP
+          // Treasure+win state). For now, clearing the Gauntlet is its own reward.
+        },
+      );
+    });
   }
 
   /** The debug Room's iteration rig: dummies, a Charger, and a Walker spawner. */
@@ -435,6 +459,12 @@ export class GameScene extends Phaser.Scene {
     // like the Charger, they stay gone until the Room rebuilds on re-entry.
     for (const spawner of this.spawners) spawner.destroy();
     this.spawners.length = 0;
+    // Discard any running Gauntlet (ADR 0011): its Enemies were just cleared from
+    // `hostiles`, so a still-running controller would march through its remaining
+    // Waves around the empty anchor. It owns no retry — a real game-over re-arms
+    // the once-ever Tripwire; this is interim cleanup, not failure handling.
+    this.gauntlet?.destroy();
+    this.gauntlet = undefined;
     eventBus.emit(GameEvent.PlayerDamaged); // refresh HUD to full
   }
 }

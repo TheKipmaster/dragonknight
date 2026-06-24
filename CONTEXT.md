@@ -24,7 +24,9 @@ A 2D top-down action dungeon crawler RPG built in Phaser 3. Movement is keyboard
 
 **Telegraph**: The visible wind-up shown before a committed action — an Enemy's attack, or a Spawner's incoming spawn points — giving the Player a window to react. A defining genre feel, not just an animation. _Avoid_: Wind-up, Tell, Charge.
 
-**Wave**: The batch of Enemies a Spawner telegraphs and conjures in a single cycle, drawn at random from one of its configured recipes (e.g. three Walkers, or one Charger). All members of a Wave are telegraphed together and appear together; cycles never overlap. _Avoid_: Batch, Pack, Group (Group is the Phaser construct in code), Horde.
+**Wave**: A batch of Enemies telegraphed and conjured together as a single unit — its members appear together, never trickled. The _source_ decides how Waves are chosen and sequenced: a Spawner draws its Wave at random from its recipes and repeats on a cadence; a Gauntlet runs a fixed, ordered list of Waves. _Avoid_: Batch, Pack, Group (Group is the Phaser construct in code), Horde.
+
+**Gauntlet**: A scripted, deterministic multi-Wave encounter triggered by a Tripwire (not autonomous like a Spawner, not Player-held like a Switch). It runs a fixed, ordered list of Waves — each Wave the same Enemies every time — advancing to the next only when the current Wave is cleared, or after a set timer. Has no body of its own and cannot be destroyed; it is a sequence the Player fights _through_, ending when the last Wave falls. _Avoid_: Spawner (autonomous, destroyable, random, endless — a Gauntlet is triggered, bodiless, deterministic, finite), Arena, Horde, Onslaught.
 
 ## Progression & Interaction
 
