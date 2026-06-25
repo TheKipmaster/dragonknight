@@ -2,7 +2,7 @@
 
 The MVP goal, current status, and backlog. Architectural _decisions_ live in [`docs/adr/`](./adr); domain _terms_ live in [`CONTEXT.md`](../CONTEXT.md). This file is the "what we're building and what's left" — keep it current as work lands.
 
-_Status as of 2026-06-22._
+_Status as of 2026-06-25._
 
 ## MVP goal
 
@@ -15,7 +15,7 @@ A playable **vertical slice**: the first Dungeon, with every system represented 
 - Move 8-directionally (keyboard), aim and attack with the mouse (free 360°)
 - Swing the sword (3-beat combo), deal damage + knockback
 - Take damage, lose Hearts, get i-frames + knockback
-- Die → respawn at the Dungeon entrance with full Hearts (no save)
+- Die → the **Run** ends: a **Game Over screen**, then back to the **Title** with the Run reset (no save; ADR 0013). _(Retires the old respawn-at-entrance loop.)_
 
 **The Dungeon has:**
 
@@ -61,11 +61,13 @@ Persistence/saving · a real boss (the Treasure stands in) · multiple weapons �
 
 ### Remaining for the MVP
 
-- [ ] **Treasure + win state** — the goal in the final Room. Touching the Treasure is the win: it fires a one-shot win **Cutscene**, then returns to the **Title screen**, closing the loop so the slice is replayable from the front door.
+- [ ] **Treasure + win state** — the goal in the final Room. Touching the Treasure is the win: a Treasure Tripwire handler fires a one-shot win **Cutscene** (in-world), which on completion returns to the **Title screen**, closing the loop so the slice is replayable from the front door. The win Cutscene _is_ the payoff — there is **no separate Victory screen** (ADR 0013: defeat gets a screen, victory gets a cutscene).
 - [ ] **Art pass** — revisit placeholder primitives once the feel is proven. Now has two dependents: it supplies the **Portraits** the Dialogue system needs, and it should land in step with **Lighting** (placeholder primitives have no normal maps — favour an overlay/render-texture lighting approach over Phaser's Light2D pipeline).
 - [ ] **Dialogue boxes** — a framed text box at the bottom of the screen with a **portrait** of the speaker. Purely a **presentation layer** — no interactive NPC entity enters scope; the "speaker" is whatever name/portrait the script supplies (cutscene characters, intro narration, the Player). Renders in the parallel `UI` scene (extends ADR 0003's UI-scene role to narrative overlays) and is driven over the event bus (`dialogue-start`/`-advance`/`-end`), never reaching into `Game`. A dialogue invocation has a **mode**: _modal_ (cutscenes/conversations — locks Player control, pauses `Game` simulation) or _ambient_ (the Player's short in-world monologues — gameplay keeps running). Both step via a **dedicated advance key** so ambient lines don't collide with move/attack. A script is an ordered list of lines, each with speaker, portrait id, and text.
-- [ ] **Cutscenes** — a scripted, Player-locked timeline run in-world over the `Game` scene by a **lean director** with a bounded verb set: show modal Dialogue, pan/focus the camera, move/spawn an entity, wait, and fire a state event (e.g. open a Door). Fired by game events or map-authored **trigger regions** (reusing the door-trigger machinery, ADR 0005); each fires **once**, with "seen" recorded in `GameState.progress` (ADR 0003) so it survives Room teardown and the respawn-to-entrance loop and never replays. **Skippable** via a key that jumps to the end and applies the end-state.
-- [ ] **Title screen** — the game's entry scene, inserted in the flow as `Boot → Preload → Title → Game` (ADR 0003). A landscape pans down into a castle with the logo fading in beside it — a **bespoke tween/camera move inside the `Title` scene**, not the in-world cutscene director (the Title has no Player/Room/`GameState`). Minimal "press to start"; no load/options menu (no persistence in the slice). The win flow returns here.
+- [ ] **Cutscenes** — a scripted, Player-locked timeline run in-world over the `Game` scene by a **lean director** with a bounded verb set: show modal Dialogue, pan/focus the camera, move/spawn/despawn an entity, wait, and fire a state event (e.g. open a Door). A Cutscene is **declarative data** — an ordered list of typed steps in a scripts module — that the director walks, `await`-ing each (ADR 0012, not imperative async code). Launched by ordinary **Tripwire handlers** (the intro region; the Treasure → win), reusing the ADR 0010 seam — **no new registry**. Each fires **once**, with "seen" the central Tripwire guard in `GameState.progress` (ADR 0010). **Skippable** via a key that fast-applies the state-mutating steps and drops the cosmetic ones.
+- [ ] **Actors** — will-less cutscene **puppets** (CONTEXT.md; ADR 0012): sprites the director spawns, tweens (direct authored movement, no physics/pathfinding), makes speak, and despawns. No AI, no Health, no combat — distinct from Enemy and from the deferred NPC. The "characters" through which Cutscenes tell their story; the Player is addressable as one (`'player'`) while under director control.
+- [ ] **Game Over screen** — the defeat terminal (CONTEXT.md; ADR 0013): on Hearts → zero the **Run** ends, this bespoke sibling scene shows (no Player/Room/`GameState`, _not_ a Cutscene), and a press resets the Run and returns to the **Title**. Replaces the retired respawn-in-place death model and resolves the "real game-over" ADR 0011 anticipated (the next Run re-arms the sanctum's once-ever `boss-fight` Tripwire for free).
+- [ ] **Title screen** — the game's entry scene, inserted in the flow as `Boot → Preload → Title → Game` (ADR 0003). A landscape pans down into a castle with the logo fading in beside it — a **bespoke tween/camera move inside the `Title` scene**, not the in-world cutscene director (the Title has no Player/Room/`GameState`). Minimal "press to start"; no load/options menu (no persistence in the slice). Both terminal flows — the win Cutscene and the Game Over screen — return here.
 
 ## Known bugs
 
