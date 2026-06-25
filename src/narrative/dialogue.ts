@@ -75,6 +75,9 @@ export function playDialogue(script: DialogueScript): Promise<void> {
  *  Player's reply. */
 export const INTRO_DIALOGUE: DialogueScript = [
   { speaker: 'narrator', text: 'The dungeon yawns open before you, cold and waiting.' },
-  { speaker: 'king', text: 'Knight! The realm is counting on you. Bring back the treasure.' },
-  { speaker: 'player', text: 'I will not return empty-handed.' },
+  { speaker: 'player', text: "So this is the necromancer's lair..." },
+  { speaker: 'narrator', text: 'The sounds of gnawing bone animated by arcane malice are accompanied by the stench of rot.' },
+  { speaker: 'player', text: "FOUL BONES!! Tell me where your master keeps his secrets, that I might bring them to light!" },
+  { speaker: 'narrator', text: "The Knight's voice rebounds off the cold stone, shaking the room. The skeletons hiss with undying hatred." },
+  { speaker: 'player', text: "SO BE IT! Meet your doom!" },
 ];

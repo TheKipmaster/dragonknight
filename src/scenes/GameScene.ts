@@ -315,12 +315,6 @@ export class GameScene extends Phaser.Scene {
     // plays the first time the Player steps in and never replays within a Run.
     tripwires.on('intro', () => {
       void playDialogue(INTRO_DIALOGUE);
-    });
-
-    // 'aggro': wake every Enemy in the active Room — the dormant-ambush pattern,
-    // the "change enemy AI" use case. Room-scoped: `hostiles` holds only the
-    // active Room's Enemies (swapped per Room), so this never reaches elsewhere.
-    tripwires.on('aggro', () => {
       for (const h of this.hostiles.getChildren()) if (isActivatable(h)) h.wake();
     });
 
