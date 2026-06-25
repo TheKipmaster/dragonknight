@@ -130,6 +130,21 @@ export const DIALOGUE = {
   depth: 1000, //        above the HUD (hearts/keys draw at default depth)
 } as const;
 
+/** ── Monologue tuning ─────────────────────────────────────────────────────
+ *  The Player thinking aloud (CONTEXT.md; ADR 0014): a transient line that
+ *  floats above the Player, rises, and fades on a timer — the casual,
+ *  *non-pausing* counterpart to the Dialogue box. No box, no Portrait, no input
+ *  (it expires; it is not advanced). Modelled on the Door's "locked" cue. */
+export const MONOLOGUE = {
+  lifeMs: 5000, //       how long a line lingers before it has fully faded (ms)
+  riseDist: 14, //       how far it drifts upward over its life (px)
+  yOffset: 14, //        starting height above the Player's centre (px)
+  maxWidth: 100, //      word-wrap width so a long line doesn't overflow (px)
+  color: '#cdd6f4', //   soft off-white murmur (an inner voice, not UI gold)
+  fontSize: '8px',
+  depth: 30, //          above entities and the Player; like the "locked" cue
+} as const;
+
 /** ── Walker enemy tuning ──────────────────────────────────────────────────
  *  The first enemy: walks straight at the Player and deals contact damage. */
 export const WALKER = {

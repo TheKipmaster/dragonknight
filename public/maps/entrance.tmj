@@ -143,6 +143,18 @@
                  "y":139.5
                 }, 
                 {
+                 "height":18,
+                 "id":19,
+                 "name":"aggro",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"tripwire",
+                 "visible":true,
+                 "width":289,
+                 "x":16,
+                 "y":238
+                }, 
+                {
                  "height":14,
                  "id":20,
                  "name":"intro",

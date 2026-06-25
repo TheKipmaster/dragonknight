@@ -55,6 +55,26 @@ try {
   if (exposed !== 'object') {
     errors.push('window.__GAME not exposed — was the build run with VITE_EXPOSE_STATE=1?');
   } else {
+    // Isolate the behavioural assertions from the entrance's narrative trigger.
+    // The 'intro' Tripwire fires when the player crosses its band — and enemies
+    // (the map's, or ones a test spawns) can shove the player into it via
+    // knockback, firing the intro Dialogue and pausing Game mid-run. Suppress it
+    // for the whole run (mark its once-guard fired so it can't fire again), close
+    // it if it already fired during boot, resume, and clear the entrance enemies.
+    // The 'aggro' test re-arms its own runtime, so we leave aggro alone here.
+    await page.evaluate(() => {
+      const game = window.__GAME;
+      const scene = game.scene.getScene('Game');
+      const intro = scene.tripwireRuntimes.find((rt) => rt.triggerName === 'intro');
+      if (intro) window.__STATE.progress.tripwiresFired.add(intro.fireId);
+      const box = game.scene.getScene('UI').dialogueBox;
+      let guard = 30;
+      while (box.isActive && guard-- > 0) box.advance();
+      if (game.scene.isPaused('Game')) game.scene.resume('Game');
+      scene.hostiles.clear(true, true);
+    });
+    await page.waitForTimeout(80); // let any resume apply before asserting
+
     const before = await page.evaluate(() => {
       const scene = window.__GAME.scene.getScene('Game');
       scene.spawnWalker(); // drive the real spawner
@@ -142,8 +162,15 @@ try {
     // result doesn't depend on the map Enemies' aggro state during boot.
     const tw = await page.evaluate(() => {
       const scene = window.__GAME.scene.getScene('Game');
-      const runtimes = scene.tripwireRuntimes;
-      if (!runtimes || runtimes.length < 1) return { error: 'no Tripwire built from the map' };
+      const rt = scene.tripwireRuntimes.find((r) => r.triggerName === 'aggro');
+      if (!rt) return { error: 'no aggro Tripwire built from the map' };
+
+      // Re-arm so the assertion is immune to boot history: knockback during boot
+      // may have already crossed the band (firing aggro and setting its edge).
+      // Clear the edge and un-fire its once-guard, so the drive below is a clean,
+      // first-ever crossing.
+      rt.reset();
+      window.__STATE.progress.tripwiresFired.delete(rt.fireId);
 
       scene.spawnWalker();
       const w = scene.hostiles.getChildren().at(-1);
@@ -151,7 +178,6 @@ try {
       const before = w.ai.state;
 
       const firedBefore = window.__STATE.progress.tripwiresFired.size;
-      const rt = runtimes[0];
       rt.notifyOverlap(); // enter the zone → outside→inside edge → fire
       rt.update();
       const after = w.ai.state;
@@ -297,6 +323,76 @@ try {
       errors.push('Game should resume after a Dialogue ends');
     } else {
       console.log('behaviour OK — Dialogue paused Game, advanced its lines, and resumed on end');
+    }
+
+    // ── Behavioural assertion: a Monologue floats, never pauses, self-expires ──
+    // The Monologue's defining contract (ADR 0014) is the *opposite* of Dialogue:
+    // player.monologue() shows a transient world-space label, does NOT pause Game,
+    // is NOT the Dialogue box, and fades itself away on a timer.
+    const mono = await page.evaluate(() => {
+      const game = window.__GAME;
+      const scene = game.scene.getScene('Game');
+      const box = game.scene.getScene('UI').dialogueBox;
+      const label = scene.player.monologue('test bark');
+      window.__mono = label; // keep a handle to check it self-destructs
+      return {
+        text: label.text,
+        aliveAtStart: label.active,
+        pausedAfter: game.scene.isPaused('Game'), // a Monologue must NOT pause
+        boxActive: box.isActive, // …and is NOT the Dialogue box
+      };
+    });
+
+    // Force the rise/fade tween to its end rather than waiting out MONOLOGUE.lifeMs
+    // (a feel knob the user tunes): completing it must run onComplete → destroy.
+    await page.evaluate(() => {
+      const tw = window.__GAME.scene.getScene('Game').tweens.getTweensOf(window.__mono)[0];
+      if (tw) tw.complete();
+    });
+    await page.waitForTimeout(60); // let the completion settle
+
+    const monoGone = await page.evaluate(() => {
+      const l = window.__mono;
+      return { destroyed: !l.active || !l.scene }; // destroy() drops active + scene
+    });
+
+    if (mono.text !== 'test bark' || !mono.aliveAtStart) {
+      errors.push(`Monologue should create a live label with its text (got "${mono.text}", alive=${mono.aliveAtStart})`);
+    } else if (mono.pausedAfter) {
+      errors.push('Monologue must NOT pause Game (unlike a Dialogue)');
+    } else if (mono.boxActive) {
+      errors.push('Monologue must not be the Dialogue box');
+    } else if (!monoGone.destroyed) {
+      errors.push('Monologue should fade and self-destruct after its lifetime');
+    } else {
+      console.log('behaviour OK — Monologue floated without pausing and self-expired');
+    }
+
+    // ── Behavioural assertion: collecting a Key barks a Monologue (ADR 0014) ───
+    // Proves the *trigger wiring*, not just the mechanism: drive the real onPickup
+    // with a real Key and assert it both banks the Key and fires the Player's
+    // contextual Monologue. (Guards against the trigger silently going missing.)
+    const pick = await page.evaluate(() => {
+      const scene = window.__GAME.scene.getScene('Game');
+      const keysBefore = window.__STATE.progress.keysHeld;
+      const key = new window.__Key(scene, scene.player.x, scene.player.y, 'smoke#key');
+      scene.onPickup(scene.player, key); // the real pickup handler
+      const bark = scene.player.activeMonologue;
+      return {
+        keysDelta: window.__STATE.progress.keysHeld - keysBefore,
+        barked: !!bark,
+        barkText: bark ? bark.text : null,
+      };
+    });
+
+    if (pick.keysDelta !== 1) {
+      errors.push(`Key pickup should bank one Key, got delta ${pick.keysDelta}`);
+    } else if (!pick.barked) {
+      errors.push('Key pickup should fire a Monologue bark (the trigger is missing)');
+    } else if (!/key/i.test(pick.barkText)) {
+      errors.push(`Key pickup bark should mention the key, got "${pick.barkText}"`);
+    } else {
+      console.log('behaviour OK — collecting a Key banked it and barked a Monologue');
     }
   }
 } catch (err) {

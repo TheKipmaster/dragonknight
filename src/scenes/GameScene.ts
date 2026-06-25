@@ -318,6 +318,13 @@ export class GameScene extends Phaser.Scene {
       for (const h of this.hostiles.getChildren()) if (isActivatable(h)) h.wake();
     });
 
+    // 'aggro': wake every Enemy in the active Room — the dormant-ambush pattern,
+    // the "change enemy AI" use case. Room-scoped: `hostiles` holds only the
+    // active Room's Enemies (swapped per Room), so this never reaches elsewhere.
+    tripwires.on('aggro', () => {
+      for (const h of this.hostiles.getChildren()) if (isActivatable(h)) h.wake();
+    });
+
     // 'boss-fight' (sanctum): start the boss-stand-in Gauntlet (ADR 0011) rung
     // around the Tripwire's region centre — the pentagram at room centre, where
     // the Player is standing when they trip it. The Gauntlet runs forward through
@@ -412,6 +419,8 @@ export class GameScene extends Phaser.Scene {
       GameState.progress.itemsTaken.add(obj.itemId);
       eventBus.emit(GameEvent.KeysChanged);
       obj.destroy();
+      // A contextual Monologue (ADR 0014): the Player thinks aloud — no pause.
+      this.player.monologue("Aha! This must be the key to the necromancer's sanctum!");
     }
   };
 

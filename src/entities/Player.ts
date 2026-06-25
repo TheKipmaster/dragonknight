@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PLAYER, SWORD, TEX } from '../config/constants';
+import { MONOLOGUE, PLAYER, SWORD, TEX } from '../config/constants';
 import { isDamageable, type Attack, type Damageable } from '../combat/Attack';
 import { Knockback } from '../components/Knockback';
 import { GameState } from '../state/GameState';
@@ -58,6 +58,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements Damageable {
   private comboExpiresAt = 0;
   /** Movement stays slowed until this time — spans the whole combo, gaps included. */
   private slowUntil = 0;
+  /** The Player's currently-fading Monologue line, if any (one thought at a time). */
+  private activeMonologue?: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, TEX.player);
@@ -245,6 +247,51 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements Damageable {
     this.clearTint();
     this.knockedBackUntil = 0;
     this.invulnerableUntil = this.scene.time.now + PLAYER.iframeMs;
+  }
+
+  /**
+   * Speak a Monologue (CONTEXT.md; ADR 0014): a transient line that floats above
+   * the Player, rises, and fades — fire-and-forget, **never pausing** and taking
+   * no input (the casual counterpart to the Dialogue box). Anchored to the Player
+   * via the tween's onUpdate, so it tracks movement while the world keeps running.
+   * Only one plays at a time — a new line replaces any still-fading one. Returns
+   * the label (handy for tests; callers may ignore it).
+   */
+  monologue(text: string): Phaser.GameObjects.Text {
+    // One thought at a time: a new line cancels and clears a still-fading one.
+    if (this.activeMonologue) {
+      this.scene.tweens.killTweensOf(this.activeMonologue);
+      this.activeMonologue.destroy();
+    }
+
+    const label = this.scene.add
+      .text(this.x, this.y - MONOLOGUE.yOffset, text, {
+        fontFamily: 'monospace',
+        fontSize: MONOLOGUE.fontSize,
+        color: MONOLOGUE.color,
+        align: 'center',
+        wordWrap: { width: MONOLOGUE.maxWidth },
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(MONOLOGUE.depth);
+    this.activeMonologue = label;
+
+    this.scene.tweens.add({
+      targets: label,
+      alpha: { from: 1, to: 0 },
+      duration: MONOLOGUE.lifeMs,
+      ease: 'Quad.in', // holds readable early, fades out late
+      onUpdate: (tw) => {
+        // Follow the Player and drift upward as it fades (the world isn't paused).
+        label.setPosition(this.x, this.y - MONOLOGUE.yOffset - MONOLOGUE.riseDist * tw.progress);
+      },
+      onComplete: () => {
+        label.destroy();
+        if (this.activeMonologue === label) this.activeMonologue = undefined;
+      },
+    });
+
+    return label;
   }
 
   /** Blink for the duration of the i-frames. */

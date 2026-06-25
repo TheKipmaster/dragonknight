@@ -6,6 +6,7 @@ import { GameScene } from './scenes/GameScene';
 import { UIScene } from './scenes/UIScene';
 import { GameState } from './state/GameState';
 import { Gauntlet } from './world/Gauntlet';
+import { Key } from './entities/Key';
 import { playDialogue } from './narrative/dialogue';
 
 const game = new Phaser.Game({
@@ -38,4 +39,5 @@ if (import.meta.env.VITE_EXPOSE_STATE) {
   w.__STATE = GameState;
   w.__Gauntlet = Gauntlet; // so the smoke harness can drive a Gauntlet's lifecycle
   w.__playDialogue = playDialogue; // so the smoke harness can start a Dialogue
+  w.__Key = Key; // so the smoke harness can drive a Key pickup
 }

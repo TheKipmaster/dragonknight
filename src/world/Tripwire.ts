@@ -24,6 +24,26 @@ export class Tripwire {
     private readonly fire: (name: TripwireName, ctx: TripwireFireContext) => void,
   ) {}
 
+  /** The authored Tripwire name. Read-only introspection (e.g. the smoke harness
+   *  targeting a specific runtime); dispatch still goes through `fire`. */
+  get triggerName(): TripwireName {
+    return this.name;
+  }
+
+  /** The persistent once-guard id (`${roomId}#${objId}`). Read-only introspection
+   *  — lets a test suppress one Tripwire via `GameState.progress.tripwiresFired`. */
+  get fireId(): string {
+    return this.ctx.id;
+  }
+
+  /** Clear the edge-detection state so the next overlap counts as a fresh
+   *  entering edge — a re-arm/test aid (normal play never needs it; the central
+   *  once-guard, not this, is what stops a real Tripwire replaying). */
+  reset(): void {
+    this.insideThisFrame = false;
+    this.wasInside = false;
+  }
+
   /** Call from the player-overlap callback on each frame contact occurs. */
   notifyOverlap(): void {
     this.insideThisFrame = true;
