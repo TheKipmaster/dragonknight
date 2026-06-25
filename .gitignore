@@ -5,10 +5,12 @@ tmp/
 .DS_Store
 PROMPT.md
 
-# Regenerable dev aids from scripts/gen-tiles.py + scripts/preview-maps.py
-# (the game loads stone.png and the .tmj files; these are just for eyeballing)
+# Regenerable dev aids from scripts/gen-tiles.py + scripts/preview-maps.py +
+# scripts/repack-walker.py (the game loads the real assets; the x8/preview PNGs
+# are just for eyeballing)
 public/maps/*.preview.png
 public/tiles/*.x8.png
+public/sprites/*.x8.png
 public/*.tiled-session
 
 # Local Claude config/state

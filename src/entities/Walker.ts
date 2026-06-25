@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { WALKER, TEX } from '../config/constants';
+import { WALKER, TEX, ANIM } from '../config/constants';
 import { Health } from '../components/Health';
 import { Knockback } from '../components/Knockback';
 import { AIController } from '../components/AIController';
@@ -38,9 +38,13 @@ export class Walker
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
+    // The sprite is now a 32px (≈2-tile) skeleton, centred in its frame with its
+    // feet on the bottom edge. Collide on a footprint around the lower body rather
+    // than the whole frame: x centred (offset (32-14)/2=9), y over the legs/feet.
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(12, 12).setOffset(2, 4);
+    body.setSize(14, 16).setOffset(9, 14);
     this.setCollideWorldBounds(true);
+    this.play(ANIM.walkerIdle); // standing pose until it wakes (chase() plays the walk)
 
     this.health = new Health(scene, WALKER.maxHp, { onDeath: () => this.die() });
     this.knockback = new Knockback(this);
@@ -68,6 +72,9 @@ export class Walker
   /** Route around walls via the shared flow field; fall back to a straight line
    *  on the final approach (target's own cell) or when off the navigable grid. */
   private chase(): void {
+    // play() runs every frame here, so pass ignoreIfPlaying=true to let the loop
+    // continue rather than restarting it from frame 0 each tick.
+    this.play(ANIM.walkerWalk, true);
     const dir = this.nav.steer(this.x, this.y);
     if (dir) {
       this.setVelocity(dir.x * WALKER.speed, dir.y * WALKER.speed);
@@ -88,6 +95,7 @@ export class Walker
   hit(attack: Attack): void {
     if (!this.health.takeDamage(attack.damage)) return;
     this.flash();
+    this.play(ANIM.walkerHurt);
     this.knockback.apply(attack.fromX, attack.fromY, attack.knockback);
     this.hurtUntil = this.scene.time.now + WALKER.hurtMs;
     this.ai.change('hurt');

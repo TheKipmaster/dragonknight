@@ -48,6 +48,18 @@ export const TEX = {
 } as const;
 
 /**
+ * Animation keys. Registered ONCE in PreloadScene.create() (animations are global,
+ * not per-sprite), then played by entities via sprite.play(). Like TEX, entities
+ * reference these logical keys, never frame indices — so re-authoring a
+ * spritesheet's frame layout is a PreloadScene-only change, not a gameplay one.
+ */
+export const ANIM = {
+  walkerIdle: 'walker-idle',
+  walkerWalk: 'walker-walk',
+  walkerHurt: 'walker-hurt',
+} as const;
+
+/**
  * Floor decals — purely decorative images dropped on a Room's floor.
  *
  * Each key is BOTH the texture key it's loaded under AND the name a `point`

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE, TEX, DECALS, SPLAT, TRAP, SPAWNER } from '../config/constants';
+import { TILE, TEX, ANIM, DECALS, SPLAT, TRAP, SPAWNER } from '../config/constants';
 import { ROOM_IDS } from '../world/rooms';
 import {
   collectTemplateNames,
@@ -26,6 +26,14 @@ export class PreloadScene extends Phaser.Scene {
     // Served from public/ at the site root (see vite defaults).
     this.load.image(TEX.tiles, 'tiles/stone.png');
     this.load.image(TEX.knightPortrait, 'portraits/knight.png');
+    // First entity to graduate from a flat placeholder rect to a real animated
+    // spritesheet. The sheet is repacked from the raw art into uniform 32px (≈2
+    // tile) cells by scripts/repack-walker.py — sliced left-to-right; animations
+    // are defined in create() below.
+    this.load.spritesheet(TEX.walker, 'sprites/walker.png', {
+      frameWidth: 32,
+      frameHeight: 32,
+    });
     for (const [key, path] of Object.entries(DECALS)) {
       this.load.image(key, path); // key doubles as the texture key (see DECALS)
     }
@@ -40,17 +48,44 @@ export class PreloadScene extends Phaser.Scene {
     this.makeRect(TEX.floor, TILE, TILE, 0x23232f, 0x2b2b3a);
     this.makeRect(TEX.heart, 12, 12, 0xff4d6d, 0x8a1f33);
     this.makeRect(TEX.dummy, TILE, TILE, 0xc9a04e, 0x7a5e23);
-    this.makeRect(TEX.walker, TILE, TILE, 0xd64550, 0x7a1f29);
+    // TEX.walker is now a loaded spritesheet (see preload), not a generated rect.
     this.makeRect(TEX.charger, TILE, TILE, 0xb05cf0, 0x5a2080);
     this.makeRect(TEX.spawner, TILE, TILE, 0x8a2f4f, 0x3a0f1f); // fleshy nest maroon
     this.makeRect(TEX.key, 10, 12, 0xffd34d, 0x8a6a12);
     this.makeSplat();
     this.makeGlyph();
     this.makeSpawnMark();
+    this.defineAnimations();
 
     // Phaser doesn't expand Tiled object templates; resolve them before any
     // Room is built (see tiledTemplates.ts), then enter the game.
     this.resolveTemplatesThenStart();
+  }
+
+  /**
+   * Register global animations from the loaded spritesheets. Animations live on
+   * the scene's AnimationManager (shared, keyed by ANIM.*), not on any one sprite,
+   * so this runs once at boot and every Walker thereafter just calls play().
+   */
+  private defineAnimations(): void {
+    this.anims.create({
+      key: ANIM.walkerWalk,
+      frames: this.anims.generateFrameNumbers(TEX.walker, { start: 1, end: 2 }),
+      frameRate: 8,
+      repeat: -1, // loop forever
+    });
+    // Idle is a single still frame (the walk cycle's first pose), so a dormant
+    // Walker reads as "standing" until it wakes and switches to the walk loop.
+    this.anims.create({
+      key: ANIM.walkerIdle,
+      frames: this.anims.generateFrameNumbers(TEX.walker, { start: 0, end: 0 }),
+      frameRate: 1,
+    });
+    this.anims.create({
+      key: ANIM.walkerHurt,
+      frames: this.anims.generateFrameNumbers(TEX.walker, { start: 3, end: 3 }),
+      frameRate: 1,
+    });
   }
 
   /**
