@@ -2,16 +2,22 @@ import Phaser from 'phaser';
 import { TEX } from '../config/constants';
 import { GameState } from '../state/GameState';
 import { eventBus, GameEvent } from '../state/eventBus';
+import { DialogueBox } from '../ui/DialogueBox';
 
 /**
  * Parallel HUD scene (ADR 0003): layered above Game, camera-independent, and
  * not torn down on Room transitions. Reads Hearts from GameState and redraws
- * when notified via the event bus.
+ * when notified via the event bus. Its remit widened to narrative overlays
+ * (ADR 0006): it also owns the Dialogue box, which — crucially — owns the
+ * advance key, since this scene is never paused while Game is (ADR 0014).
  */
 export class UIScene extends Phaser.Scene {
   private hearts: Phaser.GameObjects.Image[] = [];
   private keyIcon?: Phaser.GameObjects.Image;
   private keyLabel?: Phaser.GameObjects.Text;
+  /** The narrative Dialogue overlay (ADR 0014); public so the smoke harness can
+   *  drive its advance() without synthesising key input. */
+  dialogueBox!: DialogueBox;
 
   constructor() {
     super('UI');
@@ -20,11 +26,13 @@ export class UIScene extends Phaser.Scene {
   create(): void {
     this.drawHearts();
     this.drawKeys();
+    this.dialogueBox = new DialogueBox(this);
     eventBus.on(GameEvent.PlayerDamaged, this.drawHearts, this);
     eventBus.on(GameEvent.KeysChanged, this.drawKeys, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       eventBus.off(GameEvent.PlayerDamaged, this.drawHearts, this);
       eventBus.off(GameEvent.KeysChanged, this.drawKeys, this);
+      this.dialogueBox.destroy();
     });
   }
 

@@ -105,6 +105,31 @@ export const SWORD = {
   comboResetMs: 500, //  idle time between beats that resets the chain (ms)
 } as const;
 
+/** ── Dialogue box tuning ──────────────────────────────────────────────────
+ *  The framed, screen-anchored text box (CONTEXT.md; ADR 0014). Always pauses
+ *  Game while shown; rendered in the parallel UI scene. The advance key is owned
+ *  by the UI scene (a paused Game can't poll keys) and is deliberately distinct
+ *  from Space (attack). Text reveals as a two-stage typewriter: advance completes
+ *  the current line's reveal, then advances to the next. Layout is in the 320×240
+ *  internal resolution; the box hugs the bottom of the screen. */
+export const DIALOGUE = {
+  advanceKey: 'E', //    dedicated advance key (distinct from Space = attack)
+  typeMs: 28, //         typewriter cadence: ms per revealed character
+  marginX: 6, //         box inset from the screen's left/right edges (px)
+  marginBottom: 6, //    box inset from the screen's bottom edge (px)
+  height: 70, //         box height (px)
+  padding: 6, //         inner padding (px)
+  portraitSize: 46, //   Portrait slot side (px); text shifts right when shown
+  nameLineH: 12, //      vertical room reserved for the speaker name line (px)
+  bgColor: 0x10101a, //  box fill
+  bgAlpha: 0.92,
+  borderColor: 0xb9c4e0,// box outline
+  nameColor: '#ffd34d', //speaker name (warm gold, matches the key label)
+  textColor: '#e8ecf5', //body text
+  fontSize: '9px',
+  depth: 1000, //        above the HUD (hearts/keys draw at default depth)
+} as const;
+
 /** ── Walker enemy tuning ──────────────────────────────────────────────────
  *  The first enemy: walks straight at the Player and deals contact damage. */
 export const WALKER = {

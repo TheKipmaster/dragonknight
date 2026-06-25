@@ -242,6 +242,62 @@ try {
     } else {
       console.log('behaviour OK — Gauntlet ran 2 Waves (2→1) and completed on clear');
     }
+
+    // ── Behavioural assertion: Dialogue pauses Game, advances, and resumes ────
+    // Drives the real cross-scene ADR 0014 path end to end: playDialogue →
+    // DialogueStart → Game pauses *itself* + the UI box shows → advance through
+    // the lines → DialogueEnd → Game resumes + the playDialogue promise resolves.
+    // Phaser applies scene.pause()/resume() on the *next* step, not synchronously,
+    // so we tick the loop (waitForTimeout) between observing pause and resume.
+    const dlgStart = await page.evaluate(() => {
+      const game = window.__GAME;
+      const box = game.scene.getScene('UI').dialogueBox;
+      if (!box) return { error: 'UIScene.dialogueBox not present' };
+      const script = [
+        { speaker: 'narrator', text: 'A test line.' },
+        { speaker: 'player', text: 'And another.' },
+      ];
+      const pausedBefore = game.scene.isPaused('Game');
+      window.__dlgDone = window.__playDialogue(script); // queues the pause
+      return { pausedBefore, activeOnStart: box.isActive }; // box shows synchronously
+    });
+
+    await page.waitForTimeout(80); // let Phaser apply the queued pause
+
+    const dlgMid = await page.evaluate(() => {
+      const game = window.__GAME;
+      const box = game.scene.getScene('UI').dialogueBox;
+      const pausedDuring = game.scene.isPaused('Game');
+      // Drain it: each advance() either completes a still-typing line or steps to
+      // the next; the loop ends the Dialogue regardless of typewriter timing.
+      let guard = 30;
+      while (box.isActive && guard-- > 0) box.advance(); // last advance queues resume
+      return { pausedDuring, activeAfter: box.isActive };
+    });
+
+    await page.waitForTimeout(80); // let Phaser apply the queued resume
+
+    const dlgEnd = await page.evaluate(async () => {
+      const game = window.__GAME;
+      await window.__dlgDone; // resolves on DialogueEnd
+      return { pausedAfter: game.scene.isPaused('Game') };
+    });
+
+    if (dlgStart.error) {
+      errors.push(dlgStart.error);
+    } else if (dlgStart.pausedBefore) {
+      errors.push('Game should not be paused before a Dialogue starts');
+    } else if (!dlgStart.activeOnStart || !dlgMid.pausedDuring) {
+      errors.push(
+        `Dialogue start should show the box and pause Game (active=${dlgStart.activeOnStart}, paused=${dlgMid.pausedDuring})`,
+      );
+    } else if (dlgMid.activeAfter) {
+      errors.push('Dialogue box should hide after its last line is advanced past');
+    } else if (dlgEnd.pausedAfter) {
+      errors.push('Game should resume after a Dialogue ends');
+    } else {
+      console.log('behaviour OK — Dialogue paused Game, advanced its lines, and resumed on end');
+    }
   }
 } catch (err) {
   if (/Executable doesn't exist|playwright install/i.test(String(err?.message))) {

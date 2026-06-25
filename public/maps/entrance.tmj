@@ -153,6 +153,18 @@
                  "width":289,
                  "x":16,
                  "y":238
+                },
+                {
+                 "height":14,
+                 "id":20,
+                 "name":"intro",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"tripwire",
+                 "visible":true,
+                 "width":289,
+                 "x":16,
+                 "y":256
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -161,7 +173,7 @@
          "y":0
         }],
  "nextlayerid":4,
- "nextobjectid":20,
+ "nextobjectid":21,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2-2-geb83ddb9",

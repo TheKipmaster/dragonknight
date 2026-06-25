@@ -18,6 +18,7 @@ import type { Room } from '../world/Room';
 import { GameState } from '../state/GameState';
 import { eventBus, GameEvent } from '../state/eventBus';
 import { tripwires } from '../state/tripwires';
+import { playDialogue, INTRO_DIALOGUE } from '../narrative/dialogue';
 import type { TripwireSpawn } from '../world/Room';
 import { isContactAttacker } from '../combat/Attack';
 import { CORRIDOR, DECAL_DEPTH, GAUNTLET, SANCTUM_GAUNTLET, SPAWN_SWITCH, SPLAT, TEX, TILE, TRAP } from '../config/constants';
@@ -119,9 +120,16 @@ export class GameScene extends Phaser.Scene {
 
     eventBus.on(GameEvent.PlayerDied, this.onPlayerDied, this);
     eventBus.on(GameEvent.EnemyDied, this.onEnemyDied, this);
+    // Dialogue pauses Game; Game pauses/resumes *itself* off the bus so the UI
+    // scene never reaches in (ADR 0014). These bus callbacks fire even while
+    // this scene is paused — the event bus is independent of the scene loop.
+    eventBus.on(GameEvent.DialogueStart, this.pauseForDialogue, this);
+    eventBus.on(GameEvent.DialogueEnd, this.resumeAfterDialogue, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       eventBus.off(GameEvent.PlayerDied, this.onPlayerDied, this);
       eventBus.off(GameEvent.EnemyDied, this.onEnemyDied, this);
+      eventBus.off(GameEvent.DialogueStart, this.pauseForDialogue, this);
+      eventBus.off(GameEvent.DialogueEnd, this.resumeAfterDialogue, this);
       tripwires.clear(); // handlers close over this scene; a restart re-registers
     });
   }
@@ -301,6 +309,14 @@ export class GameScene extends Phaser.Scene {
    *  groups, and spawnEnemy() directly; the fire-time context carries only the
    *  per-instance `region`/`props`. Registered once (see create()). */
   private registerTripwires(): void {
+    // 'intro' (entrance): the Run-opening conversation — the conversation-Tripwire
+    // caller path (ADR 0014). Fire-and-forget; playDialogue emits DialogueStart,
+    // and Game pauses/resumes itself off the bus. Once-ever (no `repeat`), so it
+    // plays the first time the Player steps in and never replays within a Run.
+    tripwires.on('intro', () => {
+      void playDialogue(INTRO_DIALOGUE);
+    });
+
     // 'aggro': wake every Enemy in the active Room — the dormant-ambush pattern,
     // the "change enemy AI" use case. Room-scoped: `hostiles` holds only the
     // active Room's Enemies (swapped per Room), so this never reaches elsewhere.
@@ -448,6 +464,19 @@ export class GameScene extends Phaser.Scene {
       .setRotation(Math.random() * Math.PI * 2)
       .setScale(Phaser.Math.FloatBetween(SPLAT.minScale, SPLAT.maxScale));
     this.decals.add(splat);
+  }
+
+  /** Freeze the world for a Dialogue (ADR 0014): pause this scene's update,
+   *  physics, and clock. The UI scene (which owns the box and advance key) is a
+   *  separate, unpaused scene, so the box still renders and advances. */
+  private pauseForDialogue(): void {
+    this.scene.pause();
+  }
+
+  /** Resume when the Dialogue ends. Safe to run while paused — this is a bus
+   *  callback, not part of the (halted) update loop. */
+  private resumeAfterDialogue(): void {
+    this.scene.resume();
   }
 
   private onPlayerDied(): void {
