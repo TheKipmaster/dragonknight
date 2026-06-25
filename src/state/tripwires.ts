@@ -25,7 +25,7 @@ import { GameState } from './GameState';
  *  `on()` is typed against the derived union, so a typo there is a *compile*
  *  error; the only stringly-typed surface left is the authored Tiled `name`,
  *  which TiledRoom validates against this list and warns-and-skips (ADR 0010). */
-export const TRIPWIRE_NAMES = ['aggro', 'boss-fight', 'intro'] as const;
+export const TRIPWIRE_NAMES = ['boss-fight', 'intro'] as const;
 export type TripwireName = (typeof TRIPWIRE_NAMES)[number];
 
 /** What a handler receives: only the per-instance authoring data it can't close

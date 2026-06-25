@@ -61,7 +61,7 @@ try {
     // knockback, firing the intro Dialogue and pausing Game mid-run. Suppress it
     // for the whole run (mark its once-guard fired so it can't fire again), close
     // it if it already fired during boot, resume, and clear the entrance enemies.
-    // The 'aggro' test re-arms its own runtime, so we leave aggro alone here.
+    // The Tripwire assertion below deliberately re-arms 'intro' to drive it once.
     await page.evaluate(() => {
       const game = window.__GAME;
       const scene = game.scene.getScene('Game');
@@ -156,19 +156,20 @@ try {
     }
 
     // ── Behavioural assertion: a Tripwire fires its handler once (ADR 0010) ───
-    // Drives the real path on the map-authored 'aggro' Tripwire in `entrance`:
-    // edge detection → registry dispatch → central once-guard → the 'aggro'
-    // handler waking a dormant Enemy. Uses a fresh Walker we force dormant so the
-    // result doesn't depend on the map Enemies' aggro state during boot.
+    // Drives the real path on the map-authored 'intro' Tripwire in `entrance`:
+    // edge detection → registry dispatch → central once-guard → the handler. The
+    // 'intro' handler both wakes the Room's dormant Enemies and opens the intro
+    // Dialogue, so a fresh Walker forced dormant lets us assert the wake without
+    // depending on the map Enemies' state. (This used to target a dedicated
+    // 'aggro' Tripwire; that wake is now folded into 'intro'.)
     const tw = await page.evaluate(() => {
       const scene = window.__GAME.scene.getScene('Game');
-      const rt = scene.tripwireRuntimes.find((r) => r.triggerName === 'aggro');
-      if (!rt) return { error: 'no aggro Tripwire built from the map' };
+      const rt = scene.tripwireRuntimes.find((r) => r.triggerName === 'intro');
+      if (!rt) return { error: 'no intro Tripwire built from the map' };
 
-      // Re-arm so the assertion is immune to boot history: knockback during boot
-      // may have already crossed the band (firing aggro and setting its edge).
-      // Clear the edge and un-fire its once-guard, so the drive below is a clean,
-      // first-ever crossing.
+      // Re-arm: the start-of-run block suppressed 'intro', and boot knockback may
+      // have crossed its band. Clear the edge and un-fire its once-guard so the
+      // drive below is a clean, first-ever crossing.
       rt.reset();
       window.__STATE.progress.tripwiresFired.delete(rt.fireId);
 
@@ -191,16 +192,29 @@ try {
       return { before, after, firedBefore, firedAfter: window.__STATE.progress.tripwiresFired.size };
     });
 
+    // Firing 'intro' opened a Dialogue (queued a pause). Close it, resume, and
+    // re-suppress 'intro' so the remaining assertions run unpaused.
+    await page.waitForTimeout(60);
+    await page.evaluate(() => {
+      const game = window.__GAME;
+      const box = game.scene.getScene('UI').dialogueBox;
+      let guard = 30;
+      while (box.isActive && guard-- > 0) box.advance();
+      const rt = game.scene.getScene('Game').tripwireRuntimes.find((r) => r.triggerName === 'intro');
+      if (rt) window.__STATE.progress.tripwiresFired.add(rt.fireId);
+    });
+    await page.waitForTimeout(60); // let the queued resume apply
+
     if (tw.error) {
       errors.push(tw.error);
     } else if (tw.before !== 'inactive') {
       errors.push(`Tripwire test Walker should start dormant, was '${tw.before}'`);
     } else if (tw.after !== 'chase') {
-      errors.push(`'aggro' Tripwire should wake the Walker into 'chase', got '${tw.after}'`);
+      errors.push(`'intro' Tripwire should wake the Walker into 'chase', got '${tw.after}'`);
     } else if (tw.firedAfter !== tw.firedBefore + 1) {
       errors.push(`once Tripwire should record exactly one fire (${tw.firedBefore}→${tw.firedAfter})`);
     } else {
-      console.log("behaviour OK — 'aggro' Tripwire woke a dormant Walker once and stayed fired");
+      console.log("behaviour OK — 'intro' Tripwire woke a dormant Walker once and stayed fired");
     }
 
     // ── Behavioural assertion: a Gauntlet runs its Waves to completion (ADR 0011) ─
