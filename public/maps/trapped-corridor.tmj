@@ -99,7 +99,7 @@
                  "template":"..\/templates\/spawn.tx",
                  "x":167.543628555472,
                  "y":214.331580873149
-                },
+                }, 
                 {
                  "id":8,
                  "properties":[
@@ -252,6 +252,30 @@
                  "template":"..\/templates\/trap.tx",
                  "x":150.666666666667,
                  "y":190.333333333333
+                }, 
+                {
+                 "height":10.3333333333333,
+                 "id":28,
+                 "name":"trap-warning",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"tripwire",
+                 "visible":true,
+                 "width":55.3333333333333,
+                 "x":140.666666666667,
+                 "y":190.333333333333
+                }, 
+                {
+                 "height":15.3333333333333,
+                 "id":30,
+                 "name":"",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"tripwire",
+                 "visible":true,
+                 "width":15.6666666666667,
+                 "x":128,
+                 "y":112
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -260,7 +284,7 @@
          "y":0
         }],
  "nextlayerid":5,
- "nextobjectid":28,
+ "nextobjectid":31,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2-2-geb83ddb9",

@@ -81,3 +81,17 @@ export const INTRO_DIALOGUE: DialogueScript = [
   { speaker: 'narrator', text: "The Knight's voice rebounds off the cold stone, shaking the room. The skeletons hiss with undying hatred." },
   { speaker: 'player', text: "SO BE IT! Meet your doom!" },
 ];
+
+export const TRAP_WARNING: DialogueScript = [
+  { speaker: 'player', text: "NECROMANCEERR!!" },
+  { speaker: 'narrator', text: "The air in the narrow corridor buzzes with arcane potential." },
+  { speaker: 'narrator', text: "Noticing the smell of ozone in the air, the Knight pauses a moment." },
+  { speaker: 'player', text: "AHA!! Your tricks are getting desperate, sorcerer! My righteous snout can smell your traps from a mile away!" },
+];
+
+export const CORPSE_PILE: DialogueScript = [
+  { speaker: 'narrator', text: 'An enormous pile of malformed, discarded corpses lay in the back of the cave.'},
+  { speaker: 'player', text: 'By the Gods... Does this nightmare have no end?'},
+  { speaker: 'player', text: 'YOU WILL ANSWER FOR YOUR DEEDS, SORCERER!!'},
+  { speaker: 'narrator', text: 'The depths of the unholy amalgam began to stir, and the Knight raised his sword.'}
+];

@@ -18,7 +18,7 @@ import type { Room } from '../world/Room';
 import { GameState } from '../state/GameState';
 import { eventBus, GameEvent } from '../state/eventBus';
 import { tripwires } from '../state/tripwires';
-import { playDialogue, INTRO_DIALOGUE } from '../narrative/dialogue';
+import { playDialogue, INTRO_DIALOGUE, TRAP_WARNING, CORPSE_PILE } from '../narrative/dialogue';
 import type { TripwireSpawn } from '../world/Room';
 import { isContactAttacker } from '../combat/Attack';
 import { CORRIDOR, DECAL_DEPTH, GAUNTLET, SANCTUM_GAUNTLET, SPAWN_SWITCH, SPLAT, TEX, TILE, TRAP } from '../config/constants';
@@ -319,6 +319,14 @@ export class GameScene extends Phaser.Scene {
       // wakes the Room's dormant Enemies as the intro plays (Room-scoped — `hostiles`
       // holds only the active Room's Enemies, so this never reaches elsewhere).
       for (const h of this.hostiles.getChildren()) if (isActivatable(h)) h.wake();
+    });
+
+    tripwires.on('trap-warning', () => {
+      void playDialogue(TRAP_WARNING);
+    });
+
+    tripwires.on('corpse-pile', () => {
+      void playDialogue(CORPSE_PILE);
     });
 
     // 'boss-fight' (sanctum): start the boss-stand-in Gauntlet (ADR 0011) rung

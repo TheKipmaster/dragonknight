@@ -139,6 +139,18 @@
                  "type":"spawner",
                  "x":234.666666666667,
                  "y":58
+                }, 
+                {
+                 "height":21.3333333333333,
+                 "id":17,
+                 "name":"corpse-pile",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"tripwire",
+                 "visible":true,
+                 "width":359.333333333333,
+                 "x":16.6666666666667,
+                 "y":137.333333333333
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -147,7 +159,7 @@
          "y":0
         }],
  "nextlayerid":4,
- "nextobjectid":17,
+ "nextobjectid":18,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2-2-geb83ddb9",
