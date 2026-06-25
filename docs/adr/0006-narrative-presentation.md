@@ -2,13 +2,13 @@
 
 ## Status
 
-accepted (extends the scene layout and `GameState` of ADR 0003; reuses the door-trigger machinery of ADR 0005)
+accepted (extends the scene layout and `GameState` of ADR 0003; reuses the door-trigger machinery of ADR 0005). **The dialogue _mode_ axis below is superseded by ADR 0014**: Dialogue always pauses, and the non-pausing "ambient" half is now the separate **Monologue** channel.
 
 ## Decision
 
 **Dialogue renders in the parallel `UI` scene, not a new scene.** ADR 0003's `UI` scene already owns camera-independent overlays (the Hearts HUD); a Dialogue box is another such overlay, so its role widens from "HUD" to "HUD + narrative overlays." All of it flows over the event bus (`dialogue-start` / `-advance` / `-end`); `UI` and `Game` never reach into each other, per ADR 0003.
 
-**A dialogue invocation carries a _mode_.** _Modal_ (cutscenes, conversations) locks Player control and **pauses the `Game` simulation** so the world freezes during a story beat. _Ambient_ (the Player's short in-world monologues) leaves gameplay running. Both step on a **dedicated advance key**, distinct from move/attack, so ambient lines can advance while the Player is mid-fight without firing a swing.
+**A dialogue invocation carries a _mode_.** _Modal_ (cutscenes, conversations) locks Player control and **pauses the `Game` simulation** so the world freezes during a story beat. _Ambient_ (the Player's short in-world monologues) leaves gameplay running. Both step on a **dedicated advance key**, distinct from move/attack, so ambient lines can advance while the Player is mid-fight without firing a swing. _(Superseded by ADR 0014 — building this revealed the two "modes" as two concepts: the Dialogue box now **always** pauses, and the non-pausing case became the standalone **Monologue**. The dedicated advance key survives, but it is owned by `UIScene`, since a paused `Game` can't poll it.)_
 
 **Amendment (Tripwires, ADR 0010).** The "map-authored trigger Zones" below are realized by the **Tripwire** mechanism (ADR 0010): the director and Dialogue system are ordinary Tripwire handlers, and the once-only "seen" tracking moves _out_ of the director into Tripwire's central progress-backed guard. Modality (pausing `Game`, locking the Player) stays the handler's job.
 
