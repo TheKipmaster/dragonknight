@@ -1,3 +1,4 @@
+import { TEX } from '../config/constants';
 import { eventBus, GameEvent } from '../state/eventBus';
 
 /**
@@ -30,10 +31,11 @@ export interface Speaker {
 export type SpeakerId = 'player' | 'narrator' | 'king';
 
 /** Speaker registry: a line names a `speaker`; the box looks up the name +
- *  Portrait here, so art wires in one place and lines stay terse. Portrait keys
- *  are intentionally absent until the art pass supplies the bust textures. */
+ *  Portrait here, so art wires in one place and lines stay terse. The Knight's
+ *  bust is supplied (scripts/gen-portrait.py → public/portraits/knight.png);
+ *  the narrator stays Portrait-less and the King's bust awaits the art pass. */
 export const SPEAKERS: Record<SpeakerId, Speaker> = {
-  player: { name: 'Knight' },
+  player: { name: 'Knight', portrait: TEX.knightPortrait },
   narrator: { name: '' },
   king: { name: 'King' },
 };

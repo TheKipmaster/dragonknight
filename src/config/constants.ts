@@ -44,6 +44,7 @@ export const TEX = {
   splat: 'splat', //      death decal dropped where an enemy dies
   trap: 'trap', //        hidden magic-glyph hazard rune (tinted at runtime)
   tiles: 'tiles-stone', // shared dungeon tileset image (public/tiles/stone.png)
+  knightPortrait: 'knight-portrait', // Dialogue bust for the player (public/portraits/knight.png)
 } as const;
 
 /**
