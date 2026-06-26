@@ -28,7 +28,7 @@ export interface Speaker {
 /** The valid speaker ids. Hand-maintained alongside SPEAKERS (kept explicit, not
  *  derived, so `SPEAKERS[id].portrait` types cleanly as `string | undefined`
  *  even for speakers that omit a Portrait). */
-export type SpeakerId = 'player' | 'narrator' | 'king';
+export type SpeakerId = 'player' | 'narrator' | 'king' | 'necromancer';
 
 /** Speaker registry: a line names a `speaker`; the box looks up the name +
  *  Portrait here, so art wires in one place and lines stay terse. The Knight's
@@ -38,6 +38,7 @@ export const SPEAKERS: Record<SpeakerId, Speaker> = {
   player: { name: 'Knight', portrait: TEX.knightPortrait },
   narrator: { name: '' },
   king: { name: 'King' },
+  necromancer: { name: 'Necromancer', portrait: TEX.necromancerPortrait },
 };
 
 /** One line: who speaks and what they say. */
@@ -96,4 +97,12 @@ export const CORPSE_PILE: DialogueScript = [
   { speaker: 'player', text: 'By the Gods... Does this nightmare have no end?'},
   { speaker: 'player', text: 'YOU WILL ANSWER FOR YOUR DEEDS, SORCERER!!'},
   { speaker: 'narrator', text: 'The depths of the unholy amalgam began to stir, and the Knight raised his sword.'}
+];
+
+export const VICTORY: DialogueScript = [
+  { speaker: 'narrator', text: 'As the undead lay defeated, a voice boomed sourceless around the knight.' },
+  { speaker: 'necromancer', text: 'FOOL!! Your efforts are WASTED, warrior! While you meddle pointlessly here, my plan is already under way!' },
+  { speaker: 'necromancer', text: 'With you kept busy here, nothing now stands between me and your precious king!' },
+  { speaker: 'player', text: 'Show yourself, knave! FACE ME!!' },
+  { speaker: 'necromancer', text: "As the necromancer's hateful cackle filled the room, the knight realised he had been tricked. He must return home lest all his efforts be in vain." },
 ];

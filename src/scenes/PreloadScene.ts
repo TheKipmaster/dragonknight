@@ -26,6 +26,7 @@ export class PreloadScene extends Phaser.Scene {
     // Served from public/ at the site root (see vite defaults).
     this.load.image(TEX.tiles, 'tiles/stone.png');
     this.load.image(TEX.knightPortrait, 'portraits/knight.png');
+    this.load.image(TEX.necromancerPortrait, 'portraits/necromancer.png');
     // Title screen art (ADR 0015), conditioned to its on-screen size by
     // scripts/prep-title.py: the backdrop pre-scaled to 320x480 (scale-to-width,
     // panned through), and the wordmark keyed to RGBA so it floats over the sky.

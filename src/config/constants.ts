@@ -45,6 +45,7 @@ export const TEX = {
   trap: 'trap', //        hidden magic-glyph hazard rune (tinted at runtime)
   tiles: 'tiles-stone', // shared dungeon tileset image (public/tiles/stone.png)
   knightPortrait: 'knight-portrait', // Dialogue bust for the player (public/portraits/knight.png)
+  necromancerPortrait: 'necromancer-portrait', // Dialogue bust for the Necromancer (public/portraits/necromancer.png)
   titleBg: 'title-bg', //  Title castle backdrop, pre-scaled to 320x480 (public/title-screen.png)
   titleLogo: 'title-logo', // "DRAGON KNIGHT" wordmark, keyed RGBA (public/game-title.png)
 } as const;

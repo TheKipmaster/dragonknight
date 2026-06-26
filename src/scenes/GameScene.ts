@@ -18,7 +18,7 @@ import type { Room } from '../world/Room';
 import { GameState, resetRun } from '../state/GameState';
 import { eventBus, GameEvent } from '../state/eventBus';
 import { tripwires } from '../state/tripwires';
-import { playDialogue, INTRO_DIALOGUE, TRAP_WARNING, CORPSE_PILE } from '../narrative/dialogue';
+import { playDialogue, INTRO_DIALOGUE, TRAP_WARNING, CORPSE_PILE, VICTORY } from '../narrative/dialogue';
 import type { TripwireSpawn } from '../world/Room';
 import { isContactAttacker } from '../combat/Attack';
 import { CORRIDOR, DECAL_DEPTH, GAUNTLET, SANCTUM_GAUNTLET, SPAWN_SWITCH, SPLAT, TEX, TILE, TITLE, TRAP } from '../config/constants';
@@ -356,8 +356,16 @@ export class GameScene extends Phaser.Scene {
         SANCTUM_GAUNTLET,
         (kind, x, y) => this.spawnEnemy(kind, x, y, GAUNTLET.spawnActive),
         () => {
-          // TODO(boss-fight): reveal the Treasure / play the win Cutscene (ROADMAP
-          // Treasure+win state). For now, clearing the Gauntlet is its own reward.
+          // Clearing the Gauntlet is the win: play the victory conversation to its
+          // end, THEN return to the Title. The box lives in the parallel UI scene
+          // (ADR 0014), so this must await DialogueEnd — firing it and swapping in
+          // the same tick would tear Game down mid-line and leave the box playing
+          // over the Title/next Run. Stop the UI before the swap, like onPlayerDied:
+          // the parallel HUD doesn't stop itself on a Game swap.
+          void playDialogue(VICTORY).then(() => {
+            this.scene.stop('UI');
+            this.scene.start('Title');
+          });
         },
       );
     });
