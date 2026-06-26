@@ -26,6 +26,11 @@ export class PreloadScene extends Phaser.Scene {
     // Served from public/ at the site root (see vite defaults).
     this.load.image(TEX.tiles, 'tiles/stone.png');
     this.load.image(TEX.knightPortrait, 'portraits/knight.png');
+    // Title screen art (ADR 0015), conditioned to its on-screen size by
+    // scripts/prep-title.py: the backdrop pre-scaled to 320x480 (scale-to-width,
+    // panned through), and the wordmark keyed to RGBA so it floats over the sky.
+    this.load.image(TEX.titleBg, 'title-screen.png');
+    this.load.image(TEX.titleLogo, 'game-title.png');
     // First entity to graduate from a flat placeholder rect to a real animated
     // spritesheet. The sheet is repacked from the raw art into uniform 32px (≈2
     // tile) cells by scripts/repack-walker.py — sliced left-to-right; animations
@@ -179,7 +184,7 @@ export class PreloadScene extends Phaser.Scene {
     }
 
     if (names.size === 0) {
-      this.startGame();
+      this.startTitle();
       return;
     }
 
@@ -196,14 +201,16 @@ export class PreloadScene extends Phaser.Scene {
         const entry = this.cache.tilemap.get(id);
         if (entry) inlineTemplates(entry.data as TiledMap, templates);
       }
-      this.startGame();
+      this.startTitle();
     });
     this.load.start();
   }
 
-  private startGame(): void {
-    this.scene.start('Game');
-    this.scene.launch('UI'); // parallel HUD scene (ADR 0003)
+  private startTitle(): void {
+    // Hand off to the Title, not straight into Game (ADR 0015). The Title points
+    // at Game on "press any key"; Game resets the Run and launches the parallel
+    // UI scene itself, so the HUD always reads fresh Run state.
+    this.scene.start('Title');
   }
 
   /** Generate a filled rectangle texture with a 1px inner border. */

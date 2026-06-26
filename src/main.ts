@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { VIEW_WIDTH, VIEW_HEIGHT } from './config/constants';
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
+import { TitleScene } from './scenes/TitleScene';
 import { GameScene } from './scenes/GameScene';
 import { UIScene } from './scenes/UIScene';
 import { GameState } from './state/GameState';
@@ -27,7 +28,7 @@ const game = new Phaser.Game({
     // Render at the internal resolution, then upscale the canvas to the window.
     zoom: Phaser.Scale.MAX_ZOOM,
   },
-  scene: [BootScene, PreloadScene, GameScene, UIScene],
+  scene: [BootScene, PreloadScene, TitleScene, GameScene, UIScene],
 });
 
 // Test-only handles for the headless smoke harness (scripts/smoke.mjs). Gated on

@@ -49,3 +49,21 @@ export const GameState = {
 };
 
 export type GameStateShape = typeof GameState;
+
+/**
+ * Reinitialise all Run-scoped state to the start of a fresh Run (ADR 0013/0015):
+ * Hearts to full, the active Room back to the entrance, and every progress set
+ * cleared. Called at the top of `GameScene.create()`, making a Run reset an
+ * invariant of *entering Game* — every path in (the Title, and later the Game
+ * Over screen) gets a clean Run with no caller obliged to reset first. There is
+ * no persistence; a Run is in-memory only, so this is the whole of "new game".
+ */
+export function resetRun(): void {
+  GameState.player.halfHearts = GameState.player.maxHalfHearts;
+  GameState.activeRoomId = 'entrance';
+  GameState.progress.keysHeld = 0;
+  GameState.progress.doorsOpened.clear();
+  GameState.progress.itemsTaken.clear();
+  GameState.progress.trapsSprung.clear();
+  GameState.progress.tripwiresFired.clear();
+}

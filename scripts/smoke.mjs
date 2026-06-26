@@ -17,7 +17,10 @@ import path from 'node:path';
 
 const OUT_DIR = path.resolve('tmp/smoke');
 const SHOT = path.join(OUT_DIR, 'boot.png');
-const BOOT_WAIT_MS = 1500; // let Boot → Preload → Game/UI run and render a frame
+// Boot now lands on the Title (ADR 0015), not Game. Wait past the Title's input
+// guard (TITLE.inputDelayMs = 300) before synthesising the "press any key".
+const TITLE_INPUT_GUARD_MS = 400;
+const SCENE_WAIT_MS = 10_000; // budget for each Boot → Preload → Title → Game step
 
 await mkdir(OUT_DIR, { recursive: true });
 
@@ -44,9 +47,32 @@ try {
 
   await page.goto(url, { waitUntil: 'load' });
   await page.waitForSelector('canvas', { timeout: 10_000 });
-  await page.waitForTimeout(BOOT_WAIT_MS);
+
+  // Drive the real boot path a player takes (ADR 0015): wait for the Title,
+  // screenshot it, then "press any key" past its input guard and wait until Game
+  // — and its parallel UI, which Game launches itself — is live with a Player.
+  // The game's flow is identical under test; the harness steps through the Title
+  // rather than skipping it (which would reshape the game for the test).
+  await page.waitForFunction(() => window.__GAME?.scene.isActive('Title'), null, {
+    timeout: SCENE_WAIT_MS,
+  });
   await page.screenshot({ path: SHOT });
   console.log(`screenshot → ${SHOT}`);
+
+  await page.waitForTimeout(TITLE_INPUT_GUARD_MS);
+  await page.keyboard.press('Space'); // any key starts the Run
+
+  await page.waitForFunction(
+    () => {
+      const g = window.__GAME;
+      if (!g || !g.scene.isActive('Game')) return false;
+      const game = g.scene.getScene('Game');
+      const ui = g.scene.getScene('UI');
+      return Boolean(game?.player && ui?.dialogueBox);
+    },
+    null,
+    { timeout: SCENE_WAIT_MS },
+  );
 
   // ── Behavioural assertion: a hit drops a Walker's HP ──────────────────────
   // Exercises the real damage path on a live Walker (spawn → Walker.hit →

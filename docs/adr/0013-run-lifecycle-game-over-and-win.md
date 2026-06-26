@@ -2,7 +2,7 @@
 
 ## Status
 
-accepted (amends ADR 0003's death model — respawn-in-place is retired; resolves the "real game-over" ADR 0011 anticipated; introduces the **Run** and **Game Over screen** of CONTEXT.md; extends ADR 0006's scene flow)
+accepted (amends ADR 0003's death model — respawn-in-place is retired; resolves the "real game-over" ADR 0011 anticipated; introduces the **Run** and **Game Over screen** of CONTEXT.md; extends ADR 0006's scene flow). The entry half is wired by **ADR 0015** (stateless Title, Run reset on entering Game, an interim death→Title fade); the Game Over **screen** and the win **Cutscene** described below remain deferred there.
 
 ## Decision
 

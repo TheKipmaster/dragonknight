@@ -15,13 +15,13 @@ import { FlowField } from '../components/FlowField';
 import { isActivatable } from '../components/Activatable';
 import { PathfindingDebug } from '../debug/PathfindingDebug';
 import type { Room } from '../world/Room';
-import { GameState } from '../state/GameState';
+import { GameState, resetRun } from '../state/GameState';
 import { eventBus, GameEvent } from '../state/eventBus';
 import { tripwires } from '../state/tripwires';
 import { playDialogue, INTRO_DIALOGUE, TRAP_WARNING, CORPSE_PILE } from '../narrative/dialogue';
 import type { TripwireSpawn } from '../world/Room';
 import { isContactAttacker } from '../combat/Attack';
-import { CORRIDOR, DECAL_DEPTH, GAUNTLET, SANCTUM_GAUNTLET, SPAWN_SWITCH, SPLAT, TEX, TILE, TRAP } from '../config/constants';
+import { CORRIDOR, DECAL_DEPTH, GAUNTLET, SANCTUM_GAUNTLET, SPAWN_SWITCH, SPLAT, TEX, TILE, TITLE, TRAP } from '../config/constants';
 
 /**
  * Gameplay scene. A RoomManager owns the active Room and drives transitions
@@ -74,11 +74,24 @@ export class GameScene extends Phaser.Scene {
   /** Toggleable flow-field visualiser (backtick); a dev aid, off by default. */
   private pathDebug!: PathfindingDebug;
 
+  /** Latched once death has begun its fade-out, so further contact damage during
+   *  the fade can't re-trigger the return-to-Title (ADR 0015). Reset per create. */
+  private dying = false;
+
   constructor() {
     super('Game');
   }
 
   create(): void {
+    // A Run reset is an invariant of *entering Game* (ADR 0015): every path in —
+    // the Title now, the Game Over screen later — gets a fresh Run, so no caller
+    // has to remember to reset first. Wipe state, then launch the parallel HUD
+    // (ADR 0003) so it reads the reset values and never paints the previous
+    // Run's Hearts on a death-return.
+    resetRun();
+    this.dying = false;
+    if (!this.scene.isActive('UI')) this.scene.launch('UI');
+
     this.attackables = this.add.group();
     this.hostiles = this.add.group();
     this.solids = this.add.group();
@@ -486,21 +499,21 @@ export class GameScene extends Phaser.Scene {
     this.scene.resume();
   }
 
+  /**
+   * Death ends the Run (ADR 0013/0015): fade to black, then return to the Title.
+   * No respawn, no state reset here — the *next* entry into Game wipes the Run
+   * (resetRun in create), and tearing Game down on the scene swap disposes of the
+   * live enemies, Spawners, and any running Gauntlet, so the interim cleanup the
+   * old respawn loop did (ADR 0011) is gone, not adapted. The fade lands exactly
+   * where the deferred Game Over screen will later slot, between fade and Title.
+   */
   private onPlayerDied(): void {
-    GameState.player.halfHearts = GameState.player.maxHalfHearts;
-    const spawn = this.manager.room.spawn;
-    this.player.respawn(spawn.x, spawn.y);
-    this.hostiles.clear(true, true); // destroy all live Walkers (and the Charger)
-    // Spawners aren't hostile (not in `hostiles`), so clear them explicitly —
-    // like the Charger, they stay gone until the Room rebuilds on re-entry.
-    for (const spawner of this.spawners) spawner.destroy();
-    this.spawners.length = 0;
-    // Discard any running Gauntlet (ADR 0011): its Enemies were just cleared from
-    // `hostiles`, so a still-running controller would march through its remaining
-    // Waves around the empty anchor. It owns no retry — a real game-over re-arms
-    // the once-ever Tripwire; this is interim cleanup, not failure handling.
-    this.gauntlet?.destroy();
-    this.gauntlet = undefined;
-    eventBus.emit(GameEvent.PlayerDamaged); // refresh HUD to full
+    if (this.dying) return; // contact damage during the fade can re-emit PlayerDied
+    this.dying = true;
+    this.cameras.main.fadeOut(TITLE.deathFadeMs, 0, 0, 0);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.scene.stop('UI'); // parallel HUD doesn't stop itself on a Game swap
+      this.scene.start('Title');
+    });
   }
 }

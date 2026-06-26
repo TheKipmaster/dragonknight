@@ -45,6 +45,8 @@ export const TEX = {
   trap: 'trap', //        hidden magic-glyph hazard rune (tinted at runtime)
   tiles: 'tiles-stone', // shared dungeon tileset image (public/tiles/stone.png)
   knightPortrait: 'knight-portrait', // Dialogue bust for the player (public/portraits/knight.png)
+  titleBg: 'title-bg', //  Title castle backdrop, pre-scaled to 320x480 (public/title-screen.png)
+  titleLogo: 'title-logo', // "DRAGON KNIGHT" wordmark, keyed RGBA (public/game-title.png)
 } as const;
 
 /**
@@ -150,6 +152,35 @@ export const DIALOGUE = {
   textColor: '#e8ecf5', //body text
   fontSize: '9px',
   depth: 1000, //        above the HUD (hearts/keys draw at default depth)
+} as const;
+
+/** ── Title screen tuning ──────────────────────────────────────────────────
+ *  The game's entry point (CONTEXT.md; ADR 0015). The backdrop is pre-scaled to
+ *  320x480 (scale-to-width); the intro pans the view UP through it — opening low
+ *  on the castle gate, rising to rest on the sky with the wordmark — then holds
+ *  while a prompt pulses. Any key or click (after `inputDelayMs`) starts the Run. */
+export const TITLE = {
+  // Pan: the 480px-tall backdrop is twice the 240 viewport, leaving 240px to
+  // travel. The image's top y goes from -panTravel (bottom/castle in view) to 0
+  // (top/sky in view). panTravel must equal backdrop height − VIEW_HEIGHT.
+  panTravel: 240, //     vertical pan distance (px) = 480 backdrop − 240 viewport
+  panMs: 5000, //        duration of the upward reveal (ms)
+  panEase: 'Sine.easeInOut',
+  logoX: 160, //         wordmark centre x (px); centred in the 320 viewport
+  logoY: 74, //          wordmark centre y at rest (px); in the sky, above towers
+  logoFadeMs: 900, //    wordmark fade-in duration (ms)
+  logoFadeBeforeEnd: 700,// start the fade this long before the pan ends (ms)
+  promptText: 'PRESS ANY KEY',
+  promptY: 212, //       prompt baseline y (px), low on the screen
+  promptColor: '#ffd34d', // warm gold, matches the Dialogue name/key label
+  promptFontSize: '10px',
+  promptPulseMs: 750, //  half-cycle of the prompt's alpha pulse (ms)
+  promptMinAlpha: 0.25, // dimmest point of the pulse
+  inputDelayMs: 300, //  ignore input this long so a held key from a prior Run
+  //                        (a death that returned here) can't instantly skip
+  fadeInMs: 400, //      Title fades up from black on entry (smooths the boot and
+  //                        the post-death return, which arrives on a black screen)
+  deathFadeMs: 700, //   fade-to-black on death before returning to the Title (ms)
 } as const;
 
 /** ── Monologue tuning ─────────────────────────────────────────────────────
