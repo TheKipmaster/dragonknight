@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CHARGER, TEX } from '../config/constants';
+import { ANIM, CHARGER, TEX } from '../config/constants';
 import { Health } from '../components/Health';
 import { Knockback } from '../components/Knockback';
 import { AIController } from '../components/AIController';
@@ -58,9 +58,15 @@ export class Charger
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
+    // The Charger is now an 80x80 top-down spritesheet, body-centred in the cell
+    // (the centroid the repacker anchors on). Keep a small 12x12 collision
+    // footprint but centre it on the cell: the Arcade body is axis-aligned and
+    // does NOT rotate with the sprite, so a box on the body centre stays correct
+    // at every facing (mirrors the Player).
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(12, 12).setOffset(2, 4);
+    body.setSize(12, 12).setOffset((80 - 12) / 2, (80 - 12) / 2);
     this.setCollideWorldBounds(true);
+    this.play(ANIM.chargerIdle);
 
     this.lane = scene.add.graphics().setDepth(0);
 
@@ -97,6 +103,52 @@ export class Charger
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
     this.ai.update(delta);
+    this.face();
+    this.animate();
+  }
+
+  /**
+   * Top-down sprite: rotate the whole frame to face where the Charger is headed.
+   * While chasing it tracks its movement; once committed it locks onto the lunge
+   * lane (so the wind-up brace and the lunge streaks point down the line the
+   * Player can see). Idle/recover/hurt keep the last facing. The art is drawn
+   * facing north and pivots about its centred body centroid (default 0.5 origin);
+   * Phaser's rotation 0 faces east, so offset by +90° (mirrors the Player).
+   */
+  private face(): void {
+    let dx = 0;
+    let dy = 0;
+    if (this.committed) {
+      dx = this.lungeX;
+      dy = this.lungeY;
+    } else if (this.ai.state === 'chase') {
+      const v = (this.body as Phaser.Physics.Arcade.Body).velocity;
+      dx = v.x;
+      dy = v.y;
+    }
+    if (dx !== 0 || dy !== 0) this.setRotation(Math.atan2(dy, dx) + Math.PI / 2);
+  }
+
+  /** Play the pose for the current FSM state (frames defined in PreloadScene). */
+  private animate(): void {
+    switch (this.ai.state) {
+      case 'windup':
+        this.play(ANIM.chargerWindup, true);
+        break;
+      case 'lunge':
+        this.play(ANIM.chargerLunge, true);
+        break;
+      case 'hurt':
+        this.play(ANIM.chargerHurt, true);
+        break;
+      case 'chase': {
+        const v = (this.body as Phaser.Physics.Arcade.Body).velocity;
+        this.play(Math.abs(v.x) > 1 || Math.abs(v.y) > 1 ? ANIM.chargerWalk : ANIM.chargerIdle, true);
+        break;
+      }
+      default: // inactive, recover
+        this.play(ANIM.chargerIdle, true);
+    }
   }
 
   /** Activatable: wake from `inactive` straight into the chase, ignoring aggro

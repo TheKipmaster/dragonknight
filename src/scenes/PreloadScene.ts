@@ -44,6 +44,17 @@ export class PreloadScene extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 64,
     });
+    // The Charger gets the knight's top-down treatment (scripts/repack-charger-
+    // topdown.py): uniform SQUARE cells anchored on the body centroid so it can be
+    // rotated in-game to face its chase/lunge direction. Its cell is 80px (not the
+    // knight's 64) to clear the lunge frame's speed-streaks within the rotation
+    // circle; the on-screen body still matches the knight. Like CELL above, this is
+    // the repacker's FIXED size and survives art re-drops (a longer reach fails the
+    // script's --check instead of silently resizing).
+    this.load.spritesheet(TEX.charger, 'sprites/charger.topdown.png', {
+      frameWidth: 80,
+      frameHeight: 80,
+    });
     for (const [key, path] of Object.entries(DECALS)) {
       this.load.image(key, path); // key doubles as the texture key (see DECALS)
     }
@@ -58,8 +69,8 @@ export class PreloadScene extends Phaser.Scene {
     this.makeRect(TEX.floor, TILE, TILE, 0x23232f, 0x2b2b3a);
     this.makeRect(TEX.heart, 12, 12, 0xff4d6d, 0x8a1f33);
     this.makeRect(TEX.dummy, TILE, TILE, 0xc9a04e, 0x7a5e23);
-    // TEX.walker is now a loaded spritesheet (see preload), not a generated rect.
-    this.makeRect(TEX.charger, TILE, TILE, 0xb05cf0, 0x5a2080);
+    // TEX.walker and TEX.charger are now loaded spritesheets (see preload), not
+    // generated rects.
     this.makeRect(TEX.spawner, TILE, TILE, 0x8a2f4f, 0x3a0f1f); // fleshy nest maroon
     this.makeRect(TEX.key, 10, 12, 0xffd34d, 0x8a6a12);
     this.makeSplat();
@@ -121,6 +132,36 @@ export class PreloadScene extends Phaser.Scene {
     this.anims.create({
       key: ANIM.walkerHurt,
       frames: this.anims.generateFrameNumbers(TEX.walker, { start: 3, end: 3 }),
+      frameRate: 1,
+    });
+
+    // Charger (skeleton): frame 0 idle, 1-2 walk, 3 hurt (the alert spark),
+    // 4 wind-up (shield raised to brace), 5 lunge (the speed-streaks). Each non-
+    // walk pose is a single held frame; the FSM in Charger.ts swaps between them.
+    this.anims.create({
+      key: ANIM.chargerWalk,
+      frames: this.anims.generateFrameNumbers(TEX.charger, { start: 1, end: 2 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: ANIM.chargerIdle,
+      frames: this.anims.generateFrameNumbers(TEX.charger, { start: 0, end: 0 }),
+      frameRate: 1,
+    });
+    this.anims.create({
+      key: ANIM.chargerWindup,
+      frames: this.anims.generateFrameNumbers(TEX.charger, { start: 4, end: 4 }),
+      frameRate: 1,
+    });
+    this.anims.create({
+      key: ANIM.chargerHurt,
+      frames: this.anims.generateFrameNumbers(TEX.charger, { start: 3, end: 3 }),
+      frameRate: 1,
+    });
+    this.anims.create({
+      key: ANIM.chargerLunge,
+      frames: this.anims.generateFrameNumbers(TEX.charger, { start: 5, end: 5 }),
       frameRate: 1,
     });
   }

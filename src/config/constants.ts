@@ -61,6 +61,11 @@ export const ANIM = {
   walkerIdle: 'walker-idle',
   walkerWalk: 'walker-walk',
   walkerHurt: 'walker-hurt',
+  chargerIdle: 'charger-idle',
+  chargerWalk: 'charger-walk',
+  chargerWindup: 'charger-windup',
+  chargerHurt: 'charger-hurt',
+  chargerLunge: 'charger-lunge',
 } as const;
 
 /**
@@ -188,7 +193,7 @@ export const CHARGER = {
   chaseSpeed: 45, //     stalk speed (px/s); slower than the Walker (55)
   aggroRange: 160, //    dormant until the Player comes within this distance (px)
   triggerRange: 70, //   distance to the Player that commits a wind-up (px)
-  windupMs: 600, //      Telegraph duration — the Player's reaction window (ms)
+  windupMs: 900, //      Telegraph duration — the Player's reaction window (ms)
   lungeSpeed: 260, //    dash speed during the strike (px/s)
   lungeMs: 260, //       dash duration (ms); distance ≈ speed×ms ≈ 68px (~4 tiles)
   recoverMs: 700, //     vulnerable whiff-recovery after a lunge (ms)
