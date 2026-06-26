@@ -12,6 +12,7 @@ __pycache__/
 public/maps/*.preview.png
 public/tiles/*.x8.png
 public/sprites/*.x8.png
+public/portraits/*.x8.png
 public/*.tiled-session
 
 # Local Claude config/state
