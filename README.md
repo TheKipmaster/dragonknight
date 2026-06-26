@@ -2,6 +2,8 @@
 
 A 2D top-down action dungeon crawler RPG, built with **Phaser 3 + TypeScript + Vite**. Keyboard movement, mouse-aimed melee. Arcade (AABB) physics.
 
+**▶ Play it: <https://dragon-knight.netlify.app>**
+
 ## Getting started
 
 ```bash
