@@ -29,3 +29,5 @@ public/*.tiled-session
 .vscode
 .zprofile
 .zshrc
+# Local Netlify folder
+.netlify
