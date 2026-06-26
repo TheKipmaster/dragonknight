@@ -500,12 +500,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Death ends the Run (ADR 0013/0015): fade to black, then return to the Title.
-   * No respawn, no state reset here — the *next* entry into Game wipes the Run
-   * (resetRun in create), and tearing Game down on the scene swap disposes of the
-   * live enemies, Spawners, and any running Gauntlet, so the interim cleanup the
-   * old respawn loop did (ADR 0011) is gone, not adapted. The fade lands exactly
-   * where the deferred Game Over screen will later slot, between fade and Title.
+   * Death ends the Run (ADR 0013/0015): fade to black, then show the Game Over
+   * screen, which on a press returns to the Title. No respawn, no state reset here
+   * — the *next* entry into Game wipes the Run (resetRun in create), and tearing
+   * Game down on the scene swap disposes of the live enemies, Spawners, and any
+   * running Gauntlet, so the interim cleanup the old respawn loop did (ADR 0011) is
+   * gone, not adapted. The fade lands on the Game Over screen, which fades up over
+   * the same black it leaves behind.
    */
   private onPlayerDied(): void {
     if (this.dying) return; // contact damage during the fade can re-emit PlayerDied
@@ -513,7 +514,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.fadeOut(TITLE.deathFadeMs, 0, 0, 0);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.stop('UI'); // parallel HUD doesn't stop itself on a Game swap
-      this.scene.start('Title');
+      this.scene.start('GameOver');
     });
   }
 }

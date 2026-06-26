@@ -183,6 +183,29 @@ export const TITLE = {
   deathFadeMs: 700, //   fade-to-black on death before returning to the Title (ms)
 } as const;
 
+/** ── Game Over screen (CONTEXT.md; ADR 0013) ──────────────────────────────
+ *  The defeat counterpart to the Title: a stateless sibling screen (no Player,
+ *  Room, or GameState), *not* a Cutscene — it takes the screen and hands back to
+ *  the Title, where entering Game resets the Run (ADR 0015). Death's fade-to-black
+ *  lands here; this screen fades up over that black, holds the beat, and a press
+ *  returns to the Title. Deliberately spare: big red wordmark, one prompt. */
+export const GAME_OVER = {
+  fadeInMs: 600, //      screen fades up from the death-fade black on entry (ms)
+  fadeOutMs: 500, //     fade back to black on the press, before the Title (ms)
+  titleText: 'GAME OVER',
+  titleColor: '#c0202a', // deep blood red
+  titleFontSize: '40px', // big: dominates the 320x240 screen
+  titleY: 100, //        wordmark centre y (px), held high of centre
+  promptText: 'PRESS ANY KEY',
+  promptY: 160, //       prompt baseline y (px), below the wordmark
+  promptColor: '#ffd34d', // warm gold, matches the Title prompt
+  promptFontSize: '10px',
+  promptPulseMs: 750, //  half-cycle of the prompt's alpha pulse (ms)
+  promptMinAlpha: 0.25, // dimmest point of the pulse
+  inputDelayMs: 400, //  ignore input this long so a key still held from the dying
+  //                        Run (a mash through death) can't instantly skip
+} as const;
+
 /** ── Monologue tuning ─────────────────────────────────────────────────────
  *  The Player thinking aloud (CONTEXT.md; ADR 0014): a transient line that
  *  floats above the Player, rises, and fades on a timer — the casual,
