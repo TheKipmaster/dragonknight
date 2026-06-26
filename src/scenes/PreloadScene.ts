@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE, TEX, ANIM, DECALS, SPLAT, TRAP, SPAWNER } from '../config/constants';
+import { TILE, TEX, ANIM, DECALS, SPLAT, TRAP, SPAWNER, SWORD } from '../config/constants';
 import { ROOM_IDS } from '../world/rooms';
 import {
   collectTemplateNames,
@@ -34,6 +34,16 @@ export class PreloadScene extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 32,
     });
+    // The Player's knight, repacked from raw art by scripts/repack-knight-topdown.py
+    // into uniform SQUARE cells, each anchored on the body centroid (the rotation
+    // pivot) so a single frame can be rotated in-game to face any direction. This
+    // size is the repacker's FIXED `CELL` constant — it stays put across art
+    // re-drops, so this no longer needs editing every regen (a sword too long to
+    // fit fails the script's --check instead).
+    this.load.spritesheet(TEX.player, 'sprites/knight.topdown.png', {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
     for (const [key, path] of Object.entries(DECALS)) {
       this.load.image(key, path); // key doubles as the texture key (see DECALS)
     }
@@ -43,7 +53,7 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.makeRect(TEX.player, TILE, TILE, 0x4f8bff, 0x1b3a7a);
+    // TEX.player is now a loaded spritesheet (see preload), not a generated rect.
     this.makeRect(TEX.wall, TILE, TILE, 0x5a5a6e, 0x33333f);
     this.makeRect(TEX.floor, TILE, TILE, 0x23232f, 0x2b2b3a);
     this.makeRect(TEX.heart, 12, 12, 0xff4d6d, 0x8a1f33);
@@ -68,6 +78,33 @@ export class PreloadScene extends Phaser.Scene {
    * so this runs once at boot and every Walker thereafter just calls play().
    */
   private defineAnimations(): void {
+    // Player (knight): frame 0 idle, 1-2 walk, 3 hurt, 4-5 the sword swing
+    // (raise → strike).
+    this.anims.create({
+      key: ANIM.playerWalk,
+      frames: this.anims.generateFrameNumbers(TEX.player, { start: 1, end: 2 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: ANIM.playerIdle,
+      frames: this.anims.generateFrameNumbers(TEX.player, { start: 0, end: 0 }),
+      frameRate: 1,
+    });
+    this.anims.create({
+      key: ANIM.playerHurt,
+      frames: this.anims.generateFrameNumbers(TEX.player, { start: 3, end: 3 }),
+      frameRate: 1,
+    });
+    // The swing plays once per combo beat. Its duration is pinned to SWORD.swingMs
+    // (the hitbox's live window), so the visible slash can never drift out of sync
+    // with when the sword actually deals damage — both move together if tuned.
+    this.anims.create({
+      key: ANIM.playerAttack,
+      frames: this.anims.generateFrameNumbers(TEX.player, { start: 4, end: 5 }),
+      duration: SWORD.swingMs,
+    });
+
     this.anims.create({
       key: ANIM.walkerWalk,
       frames: this.anims.generateFrameNumbers(TEX.walker, { start: 1, end: 2 }),

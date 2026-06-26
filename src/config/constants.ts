@@ -54,6 +54,10 @@ export const TEX = {
  * spritesheet's frame layout is a PreloadScene-only change, not a gameplay one.
  */
 export const ANIM = {
+  playerIdle: 'player-idle',
+  playerWalk: 'player-walk',
+  playerHurt: 'player-hurt',
+  playerAttack: 'player-attack',
   walkerIdle: 'walker-idle',
   walkerWalk: 'walker-walk',
   walkerHurt: 'walker-hurt',
@@ -109,8 +113,8 @@ export const SWORD = {
    *  so beat count and damage curve can never drift apart. */
   comboDamage: [2, 3, 5],
   knockback: 50, //     knockback impulse on hit (px/s)
-  reach: 16, //          distance from Player centre to hitbox centre (px)
-  radius: 11, //          hitbox circle radius (px)
+  reach: 10, //          distance from Player centre to hitbox centre (px)
+  radius: 17, //          hitbox circle radius (px)
 
   swingMs: 140, //       how long the hitbox stays active per beat (ms)
   beatIntervalMs: 280, //time between beats while chaining (the cadence, ms)

@@ -4,6 +4,7 @@ tmp/
 *.log
 .DS_Store
 PROMPT.md
+__pycache__/
 
 # Regenerable dev aids from scripts/gen-tiles.py + scripts/preview-maps.py +
 # scripts/repack-walker.py (the game loads the real assets; the x8/preview PNGs

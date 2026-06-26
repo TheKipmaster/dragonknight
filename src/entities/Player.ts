@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { MONOLOGUE, PLAYER, SWORD, TEX } from '../config/constants';
+import { ANIM, MONOLOGUE, PLAYER, SWORD, TEX } from '../config/constants';
 import { isDamageable, type Attack, type Damageable } from '../combat/Attack';
 import { Knockback } from '../components/Knockback';
 import { GameState } from '../state/GameState';
@@ -67,8 +67,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements Damageable {
     scene.physics.add.existing(this);
 
     this.setCollideWorldBounds(true);
+    // The knight is now a 64x64 top-down spritesheet, body-centred in the cell
+    // (the centroid the repacker anchors on). Keep the 12x12 collision footprint
+    // (combat feel unchanged) but centre it on the cell: the Arcade body is
+    // axis-aligned and does NOT rotate with the sprite, so a box on the body
+    // centre stays correct at every facing.
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(12, 12).setOffset(2, 4);
+    body.setSize(12, 12).setOffset(26, 26);
+    this.play(ANIM.playerIdle);
 
     const kb = scene.input.keyboard!;
     this.keys = {
@@ -90,6 +96,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements Damageable {
     const pointer = this.scene.input.activePointer;
     this.scene.cameras.main.getWorldPoint(pointer.x, pointer.y, this.aimPoint);
     this.aimAngle = Phaser.Math.Angle.Between(this.x, this.y, this.aimPoint.x, this.aimPoint.y);
+
+    // Top-down sprite: rotate the whole frame to face the aim. The art is drawn
+    // facing north (up) and pivots about its centred body centroid (default 0.5
+    // origin); Phaser's rotation 0 faces east, so offset the aim by +90°.
+    this.setRotation(this.aimAngle + Math.PI / 2);
 
     const now = this.scene.time.now;
 
@@ -128,6 +139,23 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements Damageable {
         this.y + Math.sin(this.aimAngle) * SWORD.reach,
       );
       (this.activeHitbox.body as Phaser.Physics.Arcade.Body).updateFromGameObject();
+    }
+
+    // Animate from hit + combat + movement state, in priority order. Hurt takes
+    // over for the knockback window; the sword swing shows while a beat's hitbox
+    // is live (isAttacking spans exactly SWORD.swingMs, which the playerAttack
+    // anim is timed to); otherwise walk while moving, idle when still. The whole
+    // sprite is already rotated to the aim above, so the swing reads toward the
+    // cursor and the gaps between combo beats fall back to walk/idle.
+    const vel = (this.body as Phaser.Physics.Arcade.Body).velocity;
+    if (now < this.knockedBackUntil) {
+      this.play(ANIM.playerHurt, true);
+    } else if (this.isAttacking) {
+      this.play(ANIM.playerAttack, true);
+    } else if (Math.abs(vel.x) > 1 || Math.abs(vel.y) > 1) {
+      this.play(ANIM.playerWalk, true);
+    } else {
+      this.play(ANIM.playerIdle, true);
     }
   }
 
@@ -172,7 +200,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements Damageable {
     const dy = Math.sin(this.aimAngle) * SWORD.reach;
 
     const hitbox = this.scene.add
-      .circle(this.x + dx, this.y + dy, SWORD.radius, 0xffffff, 0.35)
+      .circle(this.x + dx, this.y + dy, SWORD.radius, 0xffffff, 0)
       .setDepth(5);
     this.scene.physics.add.existing(hitbox);
     const body = hitbox.body as Phaser.Physics.Arcade.Body;
